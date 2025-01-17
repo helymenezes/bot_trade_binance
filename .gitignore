@@ -1,0 +1,9 @@
+# Ignorar o arquivo de ambiente
+.env
+
+# Ignorar a pasta __pycache__
+__pycache__/
+src\logs\
+
+# Ignorar o arquivo de histórico de trades
+historio_trades.log

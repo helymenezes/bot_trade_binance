@@ -1,0 +1,83 @@
+2025-01-15 22:53:40,169 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 22:53:40,170 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 22:53:40,170 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 22:56:37,293 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 22:56:37,293 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 22:56:37,293 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:00:40,249 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:00:40,250 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:00:40,250 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:09:41,646 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:09:41,646 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:09:41,647 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:10:03,293 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:10:03,293 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:10:03,293 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:10:15,117 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:10:15,118 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:10:15,118 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:22:38,734 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:22:38,734 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:22:38,734 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:25:04,151 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:25:04,152 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:25:04,152 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:33:37,125 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:33:37,130 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:33:37,131 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:40:11,146 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:40:11,146 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:40:11,146 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:43:45,132 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:43:45,133 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:43:45,133 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:44:39,835 - ERROR - Erro fatal: API Key ou Secret Key não encontradas nas variáveis de ambiente
+2025-01-15 23:45:35,663 - ERROR - Erro fatal: API Key ou Secret Key não encontradas nas variáveis de ambiente
+2025-01-15 23:51:51,777 - ERROR - Erro fatal: API Key ou Secret Key não encontradas nas variáveis de ambiente
+2025-01-15 23:53:07,564 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:53:07,564 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:53:07,564 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-15 23:58:13,729 - ERROR - Erro fatal: HTTPSConnectionPool(host='api.binance.br', port=443): Max retries exceeded with url: /api/v3/ping (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x0000024A7F1B6120>: Failed to resolve 'api.binance.br' ([Errno 11001] getaddrinfo failed)"))
+2025-01-16 00:01:13,990 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-16 00:01:13,990 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-16 00:01:13,991 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 14:49:12,807 - ERROR - Erro fatal: HTTPSConnectionPool(host='api.binance.eu', port=443): Max retries exceeded with url: /api/v3/ping (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x0000020BE082A120>: Failed to resolve 'api.binance.eu' ([Errno 11001] getaddrinfo failed)"))
+2025-01-17 14:49:52,592 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 14:49:52,593 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 14:49:52,593 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 14:50:23,796 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 14:50:23,796 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 14:50:23,797 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 14:50:45,834 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 14:50:45,834 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 14:50:45,835 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 15:28:57,140 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 15:28:57,141 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 15:28:57,141 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 15:32:17,837 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 15:32:17,837 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 15:32:17,838 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 15:46:10,237 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 15:46:10,256 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 15:46:10,256 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 15:58:58,534 - ERROR - Erro fatal: API Key ou Secret Key não encontradas nas variáveis de ambiente
+2025-01-17 16:00:58,816 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 16:00:58,817 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 16:00:58,817 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 16:39:28,819 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 16:39:28,819 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 16:39:28,819 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 17:06:52,208 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 17:06:52,208 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 17:06:52,208 - ERROR - Erro fatal: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-17 17:07:41,268 - INFO - Robô Trader iniciado com sucesso
+2025-01-17 17:07:41,882 - INFO - Estratégia MA: fast=1314.429, slow=1321.420, decisão=Vender
+2025-01-17 17:07:42,168 - ERROR - Erro ao executar ordem de venda: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 17:08:45,373 - INFO - Estratégia MA: fast=1314.500, slow=1321.433, decisão=Vender
+2025-01-17 17:08:45,661 - ERROR - Erro ao executar ordem de venda: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-17 17:14:08,375 - INFO - Robô Trader iniciado com sucesso
+2025-01-17 17:14:08,999 - INFO - Estratégia MA: fast=217.047, slow=218.672, decisão=Vender
+2025-01-17 17:15:12,184 - INFO - Estratégia MA: fast=217.094, slow=218.707, decisão=Vender
+2025-01-17 17:16:15,362 - INFO - Estratégia MA: fast=217.091, slow=218.707, decisão=Vender
+2025-01-17 17:17:18,550 - INFO - Estratégia MA: fast=217.086, slow=218.706, decisão=Vender
+2025-01-17 17:18:21,760 - INFO - Estratégia MA: fast=217.107, slow=218.710, decisão=Vender

@@ -1,0 +1,10 @@
+# Created by venv; see https://docs.python.org/3/library/venv.html
+# Ignorar o arquivo de ambiente
+.env
+
+# Ignorar a pasta __pycache__
+__pycache__/
+
+# Ignorar o arquivo de histórico de trades
+historio_trades.log
+
