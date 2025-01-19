@@ -81,3 +81,72 @@
 2025-01-17 17:16:15,362 - INFO - Estratégia MA: fast=217.091, slow=218.707, decisão=Vender
 2025-01-17 17:17:18,550 - INFO - Estratégia MA: fast=217.086, slow=218.706, decisão=Vender
 2025-01-17 17:18:21,760 - INFO - Estratégia MA: fast=217.107, slow=218.710, decisão=Vender
+2025-01-18 20:55:48,891 - INFO - Robô Trader iniciado com sucesso
+2025-01-18 20:55:49,501 - INFO - Estratégia EMA: 7=258.633, 25=254.621, 99=242.331, decisão=Comprar
+2025-01-18 20:56:52,685 - INFO - Estratégia EMA: 7=258.698, 25=254.641, 99=242.336, decisão=Comprar
+2025-01-18 20:57:55,876 - INFO - Estratégia EMA: 7=258.713, 25=254.645, 99=242.337, decisão=Comprar
+2025-01-18 20:58:59,076 - INFO - Estratégia EMA: 7=258.703, 25=254.642, 99=242.336, decisão=Comprar
+2025-01-18 21:00:02,372 - INFO - Estratégia EMA: 7=258.646, 25=254.625, 99=242.332, decisão=Comprar
+2025-01-18 21:01:05,578 - INFO - Estratégia EMA: 7=259.379, 25=255.160, 99=242.717, decisão=Comprar
+2025-01-18 21:02:08,773 - INFO - Estratégia EMA: 7=259.269, 25=255.126, 99=242.708, decisão=Comprar
+2025-01-18 21:03:11,970 - INFO - Estratégia EMA: 7=259.077, 25=255.067, 99=242.693, decisão=Comprar
+2025-01-18 21:03:12,875 - INFO - Robô Trader iniciado com sucesso
+2025-01-18 21:03:14,225 - INFO - Estratégia EMA: 7=259.024, 25=255.050, 99=242.688, decisão=Comprar
+2025-01-18 21:03:23,376 - INFO - Robô Trader iniciado com sucesso
+2025-01-18 21:03:23,963 - INFO - Estratégia EMA: 7=259.014, 25=255.047, 99=242.688, decisão=Comprar
+2025-01-18 21:04:15,152 - INFO - Estratégia EMA: 7=258.787, 25=254.977, 99=242.669, decisão=Comprar
+2025-01-18 21:04:19,145 - INFO - Robô Trader iniciado com sucesso
+2025-01-18 21:05:18,332 - INFO - Estratégia EMA: 7=258.667, 25=254.940, 99=242.660, decisão=Comprar
+2025-01-18 21:06:21,595 - INFO - Estratégia EMA: 7=259.054, 25=255.060, 99=242.691, decisão=Comprar
+2025-01-18 21:07:24,833 - INFO - Estratégia EMA: 7=259.092, 25=255.071, 99=242.694, decisão=Comprar
+2025-01-18 21:08:28,013 - INFO - Estratégia EMA: 7=259.304, 25=255.137, 99=242.711, decisão=Comprar
+2025-01-18 21:09:31,193 - INFO - Estratégia EMA: 7=259.317, 25=255.140, 99=242.712, decisão=Comprar
+2025-01-18 21:10:34,363 - INFO - Estratégia EMA: 7=258.992, 25=255.040, 99=242.686, decisão=Comprar
+2025-01-18 21:11:37,782 - INFO - Estratégia EMA: 7=259.197, 25=255.103, 99=242.702, decisão=Comprar
+2025-01-18 21:12:40,969 - INFO - Estratégia EMA: 7=259.299, 25=255.135, 99=242.710, decisão=Comprar
+2025-01-18 21:13:44,159 - INFO - Estratégia EMA: 7=259.312, 25=255.139, 99=242.711, decisão=Comprar
+2025-01-18 21:14:47,339 - INFO - Estratégia EMA: 7=259.107, 25=255.076, 99=242.695, decisão=Comprar
+2025-01-18 21:15:50,523 - INFO - Estratégia EMA: 7=259.561, 25=255.527, 99=243.060, decisão=Comprar
+2025-01-18 21:16:53,689 - INFO - Estratégia EMA: 7=259.571, 25=255.530, 99=243.061, decisão=Comprar
+2025-01-18 21:17:56,856 - INFO - Estratégia EMA: 7=259.768, 25=255.591, 99=243.077, decisão=Comprar
+2025-01-18 21:19:00,033 - INFO - Estratégia EMA: 7=259.933, 25=255.642, 99=243.090, decisão=Comprar
+2025-01-18 21:20:03,221 - INFO - Estratégia EMA: 7=260.146, 25=255.707, 99=243.107, decisão=Comprar
+2025-01-18 21:21:06,412 - INFO - Estratégia EMA: 7=260.368, 25=255.775, 99=243.125, decisão=Comprar
+2025-01-18 21:22:09,588 - INFO - Estratégia EMA: 7=260.486, 25=255.812, 99=243.134, decisão=Comprar
+2025-01-18 21:23:12,768 - INFO - Estratégia EMA: 7=260.461, 25=255.804, 99=243.132, decisão=Comprar
+2025-01-18 21:24:15,939 - INFO - Estratégia EMA: 7=260.196, 25=255.722, 99=243.111, decisão=Comprar
+2025-01-18 21:24:37,265 - INFO - Robô Trader iniciado com sucesso
+2025-01-18 21:25:19,123 - INFO - Estratégia EMA: 7=259.963, 25=255.651, 99=243.092, decisão=Comprar
+2025-01-18 21:26:22,317 - INFO - Estratégia EMA: 7=259.951, 25=255.647, 99=243.091, decisão=Comprar
+2025-01-18 21:27:25,531 - INFO - Estratégia EMA: 7=260.021, 25=255.669, 99=243.097, decisão=Comprar
+2025-01-18 21:28:28,722 - INFO - Estratégia EMA: 7=260.221, 25=255.730, 99=243.113, decisão=Comprar
+2025-01-18 21:29:31,895 - INFO - Estratégia EMA: 7=260.333, 25=255.765, 99=243.122, decisão=Comprar
+2025-01-18 21:30:35,096 - INFO - Estratégia EMA: 7=261.182, 25=256.376, 99=243.534, decisão=Comprar
+2025-01-18 21:31:38,310 - INFO - Estratégia EMA: 7=261.362, 25=256.432, 99=243.548, decisão=Comprar
+2025-01-18 21:31:46,426 - INFO - Robô Trader iniciado com sucesso
+2025-01-18 21:31:47,023 - INFO - Estratégia EMA: 7=261.222, 25=256.389, 99=243.537, decisão=Comprar
+2025-01-18 21:32:41,521 - INFO - Estratégia EMA: 7=261.337, 25=256.424, 99=243.546, decisão=Comprar
+2025-01-18 21:33:44,734 - INFO - Estratégia EMA: 7=261.177, 25=256.375, 99=243.533, decisão=Comprar
+2025-01-18 21:34:33,840 - INFO - Robô Trader iniciado com sucesso
+2025-01-18 21:34:47,917 - INFO - Estratégia EMA: 7=261.095, 25=256.349, 99=243.527, decisão=Comprar
+2025-01-18 21:35:51,123 - INFO - Estratégia EMA: 7=260.767, 25=256.249, 99=243.501, decisão=Comprar
+2025-01-18 21:36:54,309 - INFO - Estratégia EMA: 7=260.727, 25=256.236, 99=243.497, decisão=Comprar
+2025-01-18 21:37:57,515 - INFO - Estratégia EMA: 7=260.735, 25=256.239, 99=243.498, decisão=Comprar
+2025-01-18 21:39:00,696 - INFO - Estratégia EMA: 7=260.865, 25=256.279, 99=243.508, decisão=Comprar
+2025-01-18 21:40:03,910 - INFO - Estratégia EMA: 7=260.885, 25=256.285, 99=243.510, decisão=Comprar
+2025-01-18 21:41:07,100 - INFO - Estratégia EMA: 7=260.752, 25=256.244, 99=243.499, decisão=Comprar
+2025-01-18 21:42:10,299 - INFO - Estratégia EMA: 7=260.715, 25=256.232, 99=243.496, decisão=Comprar
+2025-01-18 21:43:09,640 - INFO - Programa encerrado pelo usuário
+2025-01-18 21:46:04,577 - INFO - Robô Trader iniciado com sucesso
+2025-01-18 21:46:05,194 - INFO - Estratégia EMA: 7=104220.945, 25=103826.791, 99=101294.662, decisão=Comprar
+2025-01-18 21:46:59,060 - INFO - Robô Trader iniciado com sucesso
+2025-01-18 21:47:08,396 - INFO - Estratégia EMA: 7=104232.077, 25=103830.216, 99=101295.553, decisão=Comprar
+2025-01-18 21:48:11,597 - INFO - Estratégia EMA: 7=104232.077, 25=103830.216, 99=101295.553, decisão=Comprar
+2025-01-18 21:49:14,800 - INFO - Estratégia EMA: 7=104216.742, 25=103825.498, 99=101294.326, decisão=Comprar
+2025-01-18 21:49:58,751 - INFO - Robô Trader iniciado com sucesso
+2025-01-18 21:50:18,103 - INFO - Estratégia EMA: 7=104221.370, 25=103826.922, 99=101294.696, decisão=Comprar
+2025-01-18 21:51:21,291 - INFO - Estratégia EMA: 7=104230.610, 25=103829.765, 99=101295.435, decisão=Comprar
+2025-01-18 21:52:24,478 - INFO - Estratégia EMA: 7=104230.142, 25=103829.621, 99=101295.398, decisão=Comprar
+2025-01-18 21:53:27,661 - INFO - Estratégia EMA: 7=104228.077, 25=103828.986, 99=101295.233, decisão=Comprar
+2025-01-18 21:54:30,867 - INFO - Estratégia EMA: 7=104212.912, 25=103824.320, 99=101294.020, decisão=Comprar
+2025-01-18 21:55:33,340 - INFO - Programa encerrado pelo usuário

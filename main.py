@@ -79,13 +79,14 @@ class BinanceTraderBot:
             )
             
             df = pd.DataFrame(candles, columns=[
-                "open_time", "open_price", "high_price", "low_price", "close_price",
+                "open_time", "open", "high", "low", "close",
                 "volume", "close_time", "quote_asset_volume", "number_of_trades",
                 "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume", "--"
             ])
             
-            df = df[["close_price", "open_time"]]
-            df["close_price"] = pd.to_numeric(df["close_price"])
+            df = df[["open", "high", "low", "close", "open_time"]]
+            for col in ["open", "high", "low", "close"]:
+                df[col] = pd.to_numeric(df[col])
             df["open_time"] = pd.to_datetime(df["open_time"], unit="ms").dt.tz_localize("UTC")
             df["open_time"] = df["open_time"].dt.tz_convert("America/Sao_Paulo")
             
@@ -94,21 +95,33 @@ class BinanceTraderBot:
             logging.error("Erro ao buscar dados do ativo: %s", str(e))
             raise
 
-    def getMovingAverageTradeStrategy(self, fast_window=7, slow_window=40):
-        """Executa a estratégia de média móvel"""
+    def getMovingAverageTradeStrategy(self):
+        """Executa a estratégia de EMA"""
         try:
             df = self.candle_data.copy()
-            df["ma_fast"] = df["close_price"].rolling(window=fast_window).mean()
-            df["ma_slow"] = df["close_price"].rolling(window=slow_window).mean()
             
-            last_ma_fast = df["ma_fast"].iloc[-1]
-            last_ma_slow = df["ma_slow"].iloc[-1]
+            # Calcula as EMAs
+            df['ema_7'] = df['close'].ewm(span=7, adjust=False).mean()
+            df['ema_25'] = df['close'].ewm(span=25, adjust=False).mean()
+            df['ema_99'] = df['close'].ewm(span=99, adjust=False).mean()
             
-            trade_decision = last_ma_fast > last_ma_slow
+            # Obtém os últimos valores
+            last_ema_7 = df['ema_7'].iloc[-1]
+            last_ema_25 = df['ema_25'].iloc[-1]
+            last_ema_99 = df['ema_99'].iloc[-1]
+            
+            # Lógica de decisão
+            if last_ema_7 > last_ema_25 and last_ema_7 > last_ema_99:
+                trade_decision = True  # Compra
+            elif last_ema_7 < last_ema_25 and last_ema_7 > last_ema_99:
+                trade_decision = False  # Venda
+            else:
+                trade_decision = None  # Manter posição
             
             logging.info(
-                "Estratégia MA: fast=%.3f, slow=%.3f, decisão=%s",
-                last_ma_fast, last_ma_slow, 'Comprar' if trade_decision else 'Vender'
+                "Estratégia EMA: 7=%.3f, 25=%.3f, 99=%.3f, decisão=%s",
+                last_ema_7, last_ema_25, last_ema_99,
+                'Comprar' if trade_decision else 'Vender' if trade_decision is not None else 'Manter'
             )
             
             return trade_decision
@@ -154,7 +167,7 @@ class BinanceTraderBot:
                 logging.error(f"Erro ao executar ordem de venda: {str(e)}")
                 return False
         return False
-
+    
     def createLogOrder(self, order):
         """Cria log da ordem executada"""
         try:
@@ -204,9 +217,9 @@ class BinanceTraderBot:
 
 def main():
     # Configurações
-    STOCK_CODE = "SOL"
-    OPERATION_CODE = "SOLUSDT"
-    CANDLE_PERIOD = Client.KLINE_INTERVAL_15MINUTE
+    STOCK_CODE = "BTC"#SOL
+    OPERATION_CODE = "BTCUSDT"
+    CANDLE_PERIOD = Client.KLINE_INTERVAL_1HOUR
     TRADED_QUANTITY = 10
     
     try:
@@ -226,6 +239,7 @@ def main():
         logging.info("Programa encerrado pelo usuário")
     except Exception as e:
         logging.error("Erro fatal: %s", str(e))
+        
 
 if __name__ == "__main__":
     main()
