@@ -144,12 +144,14 @@ def main():
                     # Lê o arquivo de logs
                     try:
                         with open('historico_trades.log', 'r') as f:
-                            logs = f.read()
-                        st.text_area("Logs", logs, height=400)
+                            logs = f.readlines()
+                        # Mostra apenas as últimas 20 linhas, com as mais recentes no topo
+                        logs = ''.join(reversed(logs[-20:]))
+                        st.text_area("Logs (últimas 20 entradas)", logs, height=400)
                     except:
                         st.error("Erro ao ler arquivo de logs")
                     
-                    time.sleep(5)
+                    time.sleep(60)
                     st.rerun()
 
 if __name__ == "__main__":

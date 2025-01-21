@@ -220,16 +220,38 @@ def main():
     STOCK_CODE = "BTC"#SOL
     OPERATION_CODE = "BTCUSDT"
     CANDLE_PERIOD = Client.KLINE_INTERVAL_1HOUR
-    TRADED_QUANTITY = 10
     
     try:
+        # Inicializa o cliente Binance para obter o preço atual
+        client = Client(os.getenv('BINANCE_API_KEY'), os.getenv('BINANCE_SECRET_KEY'))
+        
+        # Obtém o preço atual do BTC
+        btc_price = float(client.get_symbol_ticker(symbol="BTCUSDT")['price'])
+        
+        # Obtém o saldo em USDT
+        account = client.get_account()
+        usdt_balance = 0
+        for balance in account['balances']:
+            if balance['asset'] == 'USDT':
+                usdt_balance = float(balance['free'])
+                break
+        
+        # Calcula a quantidade de BTC que pode ser comprada com 95% do saldo em USDT
+        TRADED_QUANTITY = (usdt_balance * 0.99) / btc_price
+        
+        # Arredonda para 5 casas decimais (mínimo permitido pela Binance para BTC)
+        TRADED_QUANTITY = round(TRADED_QUANTITY, 5)
+        
+        logging.info(f"Saldo USDT: {usdt_balance}, Preço BTC: {btc_price}, Quantidade calculada: {TRADED_QUANTITY}")
+        
         trader = BinanceTraderBot(
             STOCK_CODE,
             OPERATION_CODE,
             TRADED_QUANTITY,
-            100,
+            95,  # Usando 99% do saldo disponível
             CANDLE_PERIOD
         )
+        
         
         while True:
             trader.execute()
