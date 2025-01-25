@@ -2021,3 +2021,114 @@ Time: 2025-01-21 11:58:59
 2025-01-21 13:32:27,538 - INFO - Estratégia EMA: 7=104124.063, 25=103662.866, 99=103302.710, decisão=Comprar
 2025-01-21 13:33:30,719 - INFO - Estratégia EMA: 7=104084.193, 25=103650.598, 99=103299.520, decisão=Comprar
 2025-01-21 13:33:38,324 - INFO - Programa encerrado pelo usuário
+2025-01-25 01:15:45,636 - INFO - Saldo USDT: 1149.26445073, Preço BTC: 104998.6, Quantidade calculada: 0.01084
+2025-01-25 01:15:51,910 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 01:16:36,078 - INFO - Saldo USDT: 1149.26445073, Preço BTC: 104966.63, Quantidade calculada: 0.01084
+2025-01-25 01:16:37,233 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 01:17:44,052 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 01:20:51,997 - INFO - Programa encerrado pelo usuário
+2025-01-25 12:51:14,582 - INFO - Saldo USDT: 1149.26445073, Preço BTC: 104879.99, Quantidade calculada: 0.01085
+2025-01-25 12:51:21,425 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 12:51:22,427 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-25 12:51:22,427 - ERROR - ERRO em compra: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-25 12:52:26,089 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-25 12:52:26,089 - ERROR - ERRO em compra: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-25 12:53:29,648 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-25 12:53:29,649 - ERROR - ERRO em compra: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-25 12:54:33,233 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-25 12:54:33,233 - ERROR - ERRO em compra: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-25 13:17:08,603 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-25 13:17:08,608 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-25 13:19:36,242 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-25 13:19:36,242 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-25 13:25:04,931 - ERROR - Erro ao atualizar dados: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-25 13:25:04,932 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-2015): Invalid API-key, IP, or permissions for action.
+2025-01-25 13:30:49,116 - INFO - Saldo USDC: 100.93331162, Preço BTC: 104722.01, Quantidade calculada: 0.00095
+2025-01-25 13:30:50,611 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 13:30:51,670 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-25 13:30:51,671 - ERROR - ERRO em compra: APIError(code=-2010): Symbol not whitelisted for API key.
+2025-01-25 13:31:05,188 - INFO - Programa encerrado pelo usuário
+2025-01-25 13:31:20,431 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 13:35:02,460 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 13:35:54,579 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 13:51:26,642 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 13:51:55,123 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 13:52:01,310 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 14:04:25,820 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 14:05:30,946 - INFO - Saldo USDC: 100.93331162, Preço BTC: 104582.5, Quantidade calculada: 0.00096
+2025-01-25 14:05:32,355 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 14:05:33,413 - INFO - 
+ORDEM EXECUTADA:
+ID: 3907198314
+Side: BUY
+Symbol: BTCUSDC
+Quantity: 0.00096000
+Price: 0.00000000
+Status: FILLED
+Time: 2025-01-25 14:05:33
+
+2025-01-25 14:05:33,417 - INFO - Ordem de BUY executada: 3907198314
+2025-01-25 14:05:34,109 - INFO - COMPRA executada: 3907198314 - 0.00096000 BTC
+2025-01-25 14:06:37,894 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:06:37,895 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:07:15,225 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 14:07:41,625 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:07:41,625 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:08:45,391 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:08:45,391 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:09:14,023 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 14:09:24,880 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 14:09:49,079 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:09:49,080 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:10:52,787 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:10:52,788 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:11:56,488 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:11:56,489 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:13:00,178 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:13:00,178 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:13:55,143 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 14:14:03,841 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:14:03,842 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:15:07,510 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:15:07,511 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:16:11,173 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:16:11,174 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:17:14,839 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:17:14,840 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:18:18,525 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:18:18,525 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:19:22,227 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:19:22,227 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:20:25,929 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:20:25,929 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:21:29,877 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:21:29,877 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:22:33,573 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:22:33,573 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:23:37,303 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:23:37,304 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:23:37,559 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 14:24:41,029 - ERROR - Erro ao executar ordem de compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:24:41,029 - ERROR - ERRO em compra: APIError(code=-2010): Account has insufficient balance for requested action.
+2025-01-25 14:31:24,758 - ERROR - Erro ao buscar dados do ativo: APIError(code=-1120): Invalid interval.
+2025-01-25 14:31:24,764 - ERROR - Erro ao atualizar dados: APIError(code=-1120): Invalid interval.
+2025-01-25 14:31:24,764 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-1120): Invalid interval.
+2025-01-25 14:31:48,397 - ERROR - Erro ao buscar dados do ativo: APIError(code=-1120): Invalid interval.
+2025-01-25 14:31:48,397 - ERROR - Erro ao atualizar dados: APIError(code=-1120): Invalid interval.
+2025-01-25 14:31:48,398 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-1120): Invalid interval.
+2025-01-25 14:32:28,334 - ERROR - Erro ao buscar dados do ativo: APIError(code=-1120): Invalid interval.
+2025-01-25 14:32:28,335 - ERROR - Erro ao atualizar dados: APIError(code=-1120): Invalid interval.
+2025-01-25 14:32:28,335 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-1120): Invalid interval.
+2025-01-25 14:32:30,416 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 14:35:30,585 - ERROR - Erro ao buscar dados do ativo: APIError(code=-1120): Invalid interval.
+2025-01-25 14:35:30,585 - ERROR - Erro ao atualizar dados: APIError(code=-1120): Invalid interval.
+2025-01-25 14:35:30,585 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-1120): Invalid interval.
+2025-01-25 14:37:47,070 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 14:38:00,871 - ERROR - Erro ao buscar dados do ativo: APIError(code=-1120): Invalid interval.
+2025-01-25 14:38:00,871 - ERROR - Erro ao atualizar dados: APIError(code=-1120): Invalid interval.
+2025-01-25 14:38:00,871 - ERROR - Erro ao inicializar o cliente Binance: APIError(code=-1120): Invalid interval.
+2025-01-25 14:38:44,143 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 14:42:13,101 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 15:23:07,104 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 15:24:31,551 - INFO - Robô Trader iniciado com sucesso
+2025-01-25 15:24:36,430 - INFO - Robô Trader iniciado com sucesso
