@@ -1,5 +1,6 @@
 import os
 import time
+import requests
 from datetime import datetime
 import logging
 import pandas as pd
@@ -12,6 +13,7 @@ from dotenv import load_dotenv
 from logger import trade_logger
 from dataclasses import dataclass
 from src.indicators import calculate_indicators, strategy_signals
+from src.monitor import BotMonitor
 
 # Carrega variáveis de ambiente
 load_dotenv()
@@ -86,6 +88,8 @@ class BinanceTraderBot:
         self.account_data = None
         self.last_stock_account_balance = 0.0
         self.candle_data = None
+        self.last_trade = None
+        self.monitor = BotMonitor(trade_logger)
         
         if not self.config.api_key or not self.config.secret_key:
             raise ValueError("API Key ou Secret Key não encontradas nas variáveis de ambiente")
@@ -98,9 +102,15 @@ class BinanceTraderBot:
                 tld='com'
             )
             
+            # Configura timeout para todas as requisições
+            self.client_binance.session.headers.update({
+                'Connection': 'keep-alive',
+                'Keep-Alive': '30'
+            })
+            
             # Testa a conexão com retry
-            max_retries = 3
-            retry_delay = 5
+            max_retries = 5  # Aumenta o número de tentativas
+            retry_delay = 10  # Aumenta o delay inicial
             for attempt in range(max_retries):
                 try:
                     self.client_binance.ping()
@@ -121,18 +131,26 @@ class BinanceTraderBot:
 
     def updateAllData(self):
         """Atualiza todos os dados da conta com mecanismo de retry"""
-        max_retries = 3
-        retry_delay = 5  # segundos
+        max_retries = 5  # Aumenta o número de tentativas
+        retry_delay = 10  # Aumenta o delay inicial
         
         for attempt in range(max_retries):
             try:
-                # Tenta ping na API primeiro para verificar conexão
-                self.client_binance.ping()
+                try:
+                    # Tenta ping na API primeiro para verificar conexão
+                    self.client_binance.ping()
+                except Exception as e:
+                    trade_logger.log_error("Erro ao fazer ping na API", e)
+                    raise
                 
-                self.account_data = self.getUpdatedAccountData()
-                self.last_stock_account_balance = self.getLastStockAccountBalance()
-                self.actual_trade_position = self.getActualTradePosition()
-                self.candle_data = self.getStockData_ClosePrice_OpenTime()
+                try:
+                    self.account_data = self.getUpdatedAccountData()
+                    self.last_stock_account_balance = self.getLastStockAccountBalance()
+                    self.actual_trade_position = self.getActualTradePosition()
+                    self.candle_data = self.getStockData_ClosePrice_OpenTime()
+                except Exception as e:
+                    trade_logger.log_error("Erro ao atualizar dados da conta", e)
+                    raise
                 
                 # Inicializa saldo inicial na primeira execução
                 if self.initial_balance == 0.0 and self.last_stock_account_balance > 0:
@@ -378,45 +396,39 @@ class BinanceTraderBot:
         """Loop principal de execução do bot"""
         while self._running:
             try:
+                # Atualiza dados do mercado
                 self.updateAllData()
-                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                
-                # Log do status atual
-                status_msg = (
-                    f"\n{'='*50}"
-                    f"\nStatus do Bot em {current_time}"
-                    f"\nPosição atual: {'Comprado' if self.actual_trade_position else 'Vendido'}"
-                    f"\nBalanço atual: {self.last_stock_account_balance} {self.stock_code}"
-                    f"\nPreço atual: {self.candle_data['close'].iloc[-1]:.2f}"
-                )
-                trade_logger.log_info(status_msg)
                 
                 # Calcula indicadores
                 df_with_indicators = calculate_indicators(self.candle_data)
+                df_with_indicators['signal'] = strategy_signals(df_with_indicators)
                 
-                # Gera sinais de trading
-                signals = strategy_signals(df_with_indicators)
+                # Atualiza status no monitor
+                self.monitor.update_status(self, df_with_indicators)
                 
                 # Último sinal gerado
-                trade_decision = signals.iloc[-1] == 1
+                trade_decision = df_with_indicators['signal'].iloc[-1] == 1
                 
-                # Log da análise técnica
-                analysis_msg = (
-                    f"\nAnálise Técnica:"
-                    f"\nEMA 7: {df_with_indicators['ema_7'].iloc[-1]:.2f}"
-                    f"\nEMA 25: {df_with_indicators['ema_25'].iloc[-1]:.2f}"
-                    f"\nMACD: {df_with_indicators['macd_line'].iloc[-1]:.2f}"
-                    f"\nSinal MACD: {df_with_indicators['signal_line'].iloc[-1]:.2f}"
-                    f"\nRSI: {df_with_indicators['rsi'].iloc[-1]:.2f}"
-                    f"\nSinal gerado: {'COMPRA' if trade_decision else 'VENDA'}"
-                )
-                trade_logger.log_info(analysis_msg)
-                
+                # Executa operações de trading
                 if not self.actual_trade_position and trade_decision:
-                    self.buyStock()
+                    order = self.buyStock()
+                    if order:
+                        self.last_trade = {
+                            'side': 'COMPRA',
+                            'quantity': float(order['origQty']),
+                            'price': float(order['fills'][0]['price']),
+                            'timestamp': datetime.fromtimestamp(order['transactTime']/1000).strftime('%Y-%m-%d %H:%M:%S')
+                        }
                 elif self.actual_trade_position and not trade_decision:
-                    self.sellStock()
-                    
+                    order = self.sellStock()
+                    if order:
+                        self.last_trade = {
+                            'side': 'VENDA',
+                            'quantity': float(order['origQty']),
+                            'price': float(order['fills'][0]['price']),
+                            'timestamp': datetime.fromtimestamp(order['transactTime']/1000).strftime('%Y-%m-%d %H:%M:%S')
+                        }
+                
                 time.sleep(2)
                 self.updateAllData()
                 
@@ -426,8 +438,49 @@ class BinanceTraderBot:
 
     def execute(self):
         """Executa um único ciclo de trading"""
-        if self._running:
-            self._run_loop()
+        try:
+            # Atualiza dados do mercado
+            self.updateAllData()
+            
+            # Calcula indicadores
+            df_with_indicators = calculate_indicators(self.candle_data)
+            df_with_indicators['signal'] = strategy_signals(df_with_indicators)
+            
+            # Atualiza status no monitor
+            self.monitor.update_status(self, df_with_indicators)
+            
+            # Se o bot não estiver rodando, apenas atualiza o status
+            if not self._running:
+                return
+                
+            # Último sinal gerado
+            trade_decision = df_with_indicators['signal'].iloc[-1] == 1
+            
+            # Executa operações de trading
+            if not self.actual_trade_position and trade_decision:
+                order = self.buyStock()
+                if order:
+                    self.last_trade = {
+                        'side': 'COMPRA',
+                        'quantity': float(order['origQty']),
+                        'price': float(order['fills'][0]['price']),
+                        'timestamp': datetime.fromtimestamp(order['transactTime']/1000).strftime('%Y-%m-%d %H:%M:%S')
+                    }
+            elif self.actual_trade_position and not trade_decision:
+                order = self.sellStock()
+                if order:
+                    self.last_trade = {
+                        'side': 'VENDA',
+                        'quantity': float(order['origQty']),
+                        'price': float(order['fills'][0]['price']),
+                        'timestamp': datetime.fromtimestamp(order['transactTime']/1000).strftime('%Y-%m-%d %H:%M:%S')
+                    }
+            
+            time.sleep(2)
+            
+        except Exception as e:
+            trade_logger.log_error("Erro durante execução", e)
+            time.sleep(10)  # Reduzido para 10 segundos antes de tentar novamente
 
 def main():
     try:
@@ -454,10 +507,14 @@ def main():
         # Inicializa o bot
         trader = BinanceTraderBot(config)
         
+        # Inicia o bot
+        trader.start()
         
-        while True:
-            trader.execute()
-            time.sleep(60)
+        try:
+            while True:
+                time.sleep(1)  # Mantém o programa rodando
+        except KeyboardInterrupt:
+            trader.stop()  # Para o bot de forma segura
             
     except KeyboardInterrupt:
         trade_logger.log_info("Programa encerrado pelo usuário")

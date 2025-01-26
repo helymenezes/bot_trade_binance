@@ -20,71 +20,50 @@ from src.indicators import calculate_indicators, strategy_signals
 st.set_page_config(
     page_title="Binance Trading Bot",
     layout="wide",
-    page_icon=":chart_with_upwards_trend:"  # Ícone compatível com UTF-8
+    page_icon=":chart_with_upwards_trend:"
 )
 
 # Título da aplicação
 st.title("📈 Binance Trading Bot - EMA Strategy")
 
 def init_bot(config):
-    """Inicializa e retorna uma instância do bot trader com mecanismo de retry"""
+    """Inicializa e retorna uma instância do bot trader"""
     @st.cache_resource
     def _init_bot(config):
-        max_retries = 3
-        retry_delay = 5  # segundos
-        
-        for attempt in range(max_retries):
-            try:
-                # Verifica conexão com API Binance
-                st.info(f"Tentativa {attempt + 1} de {max_retries} de conexão com API Binance...")
-                
-                # Cria configuração a partir dos parâmetros
-                trading_config = TradingConfig(
-                    api_key=os.getenv('BINANCE_API_KEY'),
-                    secret_key=os.getenv('BINANCE_SECRET_KEY'),
-                    trading_pair=config['operation_code'],
-                    base_asset=config['stock_code'],
-                    quote_asset=config['quote_asset'],
-                    trading_percentage=config['traded_percentage'],
-                    stop_loss=config['stop_loss'],
-                    take_profit=config['take_profit'],
-                    candle_interval=config['candle_period']
-                )
-                
-                bot = BinanceTraderBot(trading_config)
-                
-                # Testa conexão obtendo dados de mercado com retry
-                for ping_attempt in range(3):
-                    try:
-                        # Tenta ping primeiro
-                        bot.client_binance.ping()
-                        # Se ping ok, tenta dados do mercado
-                        test_data = bot.client_binance.get_symbol_ticker(symbol=config['operation_code'])
-                        if test_data:
-                            st.success("Conexão com API Binance estabelecida com sucesso!")
-                            return bot
-                    except Exception as ping_error:
-                        if ping_attempt < 2:  # Se não é a última tentativa
-                            st.warning(f"Tentativa {ping_attempt + 1} de ping falhou, tentando novamente...")
-                            time.sleep(2)
-                        else:
-                            raise ping_error
-                
-                raise ConnectionError("Falha ao conectar com API Binance após várias tentativas")
-                
-            except ConnectionError as ce:
-                if attempt < max_retries - 1:  # Se ainda não é a última tentativa
-                    st.warning(f"Tentativa {attempt + 1} falhou. Tentando novamente em {retry_delay} segundos...")
-                    time.sleep(retry_delay)
-                    retry_delay *= 2  # Aumenta o tempo de espera entre tentativas
-                else:
-                    st.error(f"Erro de conexão após {max_retries} tentativas: {str(ce)}")
-                    trade_logger.log_error("Erro de conexão com API Binance", ce)
-                    return None
-            except Exception as e:
-                st.error(f"Erro ao inicializar bot: {str(e)}")
-                trade_logger.log_error("Erro ao inicializar bot", e)
-                return None
+        try:
+            # Verifica conexão com API Binance
+            st.info("Verificando conexão com API Binance...")
+            
+            # Cria configuração a partir dos parâmetros
+            trading_config = TradingConfig(
+                api_key=os.getenv('BINANCE_API_KEY'),
+                secret_key=os.getenv('BINANCE_SECRET_KEY'),
+                trading_pair=config['operation_code'],
+                base_asset=config['stock_code'],
+                quote_asset=config['quote_asset'],
+                trading_percentage=config['traded_percentage'],
+                stop_loss=config['stop_loss'],
+                take_profit=config['take_profit'],
+                candle_interval=config['candle_period']
+            )
+            
+            bot = BinanceTraderBot(trading_config)
+            
+            # Testa conexão obtendo dados de mercado
+            test_data = bot.client_binance.get_symbol_ticker(symbol=config['operation_code'])
+            if not test_data:
+                raise ConnectionError("Falha ao conectar com API Binance")
+            
+            st.success("Conexão com API Binance estabelecida com sucesso!")
+            return bot
+        except ConnectionError as ce:
+            st.error(f"Erro de conexão: {str(ce)}")
+            trade_logger.log_error("Erro de conexão com API Binance", ce)
+            return None
+        except Exception as e:
+            st.error(f"Erro ao inicializar bot: {str(e)}")
+            trade_logger.log_error("Erro ao inicializar bot", e)
+            return None
             
     bot = _init_bot(config)
     if bot is None:
@@ -123,9 +102,9 @@ def get_bot_config():
         
         # Validação da porcentagem negociada
         traded_percentage = st.number_input("Porcentagem Negociada", 
-                                          value=st.session_state.bot_config['traded_percentage'], 
-                                          min_value=1, 
-                                          max_value=100)
+                                       value=st.session_state.bot_config['traded_percentage'], 
+                                       min_value=1, 
+                                       max_value=100)
         if traded_percentage < 1 or traded_percentage > 100:
             st.error("Porcentagem deve estar entre 1% e 100%.")
         else:
@@ -155,10 +134,10 @@ def get_bot_config():
         
         # Validação do take profit
         take_profit = st.number_input("Take Profit (%)", 
-                                    value=st.session_state.bot_config['take_profit'], 
-                                    min_value=0.1, 
-                                    max_value=100.0, 
-                                    step=0.1)
+                                  value=st.session_state.bot_config['take_profit'], 
+                                  min_value=0.1, 
+                                  max_value=100.0, 
+                                  step=0.1)
         if take_profit < 0.1 or take_profit > 100:
             st.error("Take Profit deve estar entre 0.1% e 100%.")
         else:
@@ -170,13 +149,8 @@ def get_bot_config():
     
     return st.session_state.bot_config
 
-from src.indicators import calculate_indicators, strategy_signals
-
 def plot_ema_macd_roi(df, title='EMA(7,25) & MACD(12,26) & ROI'):
-    """
-    Plota os dados de EMA, MACD e ROI com marcações de cruzamentos de compra e venda.
-    """
-    # Criação dos subplots
+    """Plota os dados de EMA, MACD e ROI com marcações de cruzamentos de compra e venda."""
     fig = make_subplots(
         rows=3, 
         cols=1, 
@@ -214,18 +188,18 @@ def plot_ema_macd_roi(df, title='EMA(7,25) & MACD(12,26) & ROI'):
         name='EMA 25'
     ), row=1, col=1)
 
-    # Identificar os cruzamentos corretos
+    # Identificar os cruzamentos
     buy_crossover = df[(df['signal'] == 1) & (df['signal'].shift(1) != 1)]
     sell_crossover = df[(df['signal'] == -1) & (df['signal'].shift(1) != -1)]
 
-    # Adicionar sinais de compra e venda ao gráfico
+    # Adicionar sinais de compra e venda
     if not buy_crossover.empty:
         fig.add_trace(go.Scatter(
             x=buy_crossover.index,
             y=buy_crossover['close'],
             mode='markers',
             marker=dict(symbol='triangle-up', color='green', size=10),
-            name='Cruzamento Compra'
+            name='Sinal Compra'
         ), row=1, col=1)
 
     if not sell_crossover.empty:
@@ -234,7 +208,7 @@ def plot_ema_macd_roi(df, title='EMA(7,25) & MACD(12,26) & ROI'):
             y=sell_crossover['close'],
             mode='markers',
             marker=dict(symbol='triangle-down', color='red', size=10),
-            name='Cruzamento Venda'
+            name='Sinal Venda'
         ), row=1, col=1)
 
     # MACD
@@ -259,7 +233,7 @@ def plot_ema_macd_roi(df, title='EMA(7,25) & MACD(12,26) & ROI'):
         name='Histograma'
     ), row=2, col=1)
 
-    # ROI (se existir)
+    # ROI
     if 'roi' in df.columns:
         fig.add_trace(go.Scatter(
             x=df.index,
@@ -268,7 +242,7 @@ def plot_ema_macd_roi(df, title='EMA(7,25) & MACD(12,26) & ROI'):
             name='ROI'
         ), row=3, col=1)
 
-    # Layout do gráfico
+    # Layout
     fig.update_layout(
         title=title,
         xaxis_rangeslider_visible=False,
@@ -276,8 +250,7 @@ def plot_ema_macd_roi(df, title='EMA(7,25) & MACD(12,26) & ROI'):
         height=800
     )
 
-    # Exibir gráfico no Streamlit
-    st.plotly_chart(fig, use_container_width=True)
+    return fig
 
 # Controle de execução do bot
 if 'bot_running' not in st.session_state:
@@ -305,107 +278,187 @@ def main():
     bot.updateAllData()
     
     # Executa o bot se estiver rodando
-    if st.session_state.bot_running:
-        bot.execute()
+    if st.session_state.bot_running and not bot._running:
+        bot.start()
+    elif not st.session_state.bot_running and bot._running:
+        bot.stop()
+    
+    # Executa um ciclo para atualizar o monitoramento
+    bot.execute()
     
     # Calcula indicadores
     df = bot.candle_data.copy()
     df = calculate_indicators(df)
-    
-    # Calcula sinais de estratégia
     df['signal'] = strategy_signals(df)
     
-    # Cria colunas para layout
+    # Layout principal
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        # Exibe gráfico
-        plot_ema_macd_roi(df)
+        # Gráfico principal
+        fig = plot_ema_macd_roi(df)
+        st.plotly_chart(fig, use_container_width=True)
     
     with col2:
-        # Painel de métricas
-        st.subheader("📊 Métricas")
-        col_metric1, col_metric2, col_metric3 = st.columns(3)
+        # Status do Bot
+        st.subheader("📊 Status do Bot")
         
-        with col_metric1:
-            st.metric("Saldo Atual", f"{bot.last_stock_account_balance:.2f} {bot.stock_code}")
-            st.metric("Posição Atual", "Comprado" if bot.actual_trade_position else "Vendido")
-            st.metric("Preço Atual", f"{df['close'].iloc[-1]:.2f}")
-            st.metric("Volume 24h", f"{df['volume'].iloc[-1]:.2f}")
+        # Métricas principais em 3 colunas
+        col_status, col_position, col_balance = st.columns(3)
+        
+        with col_status:
+            st.metric(
+                "Estado do Bot",
+                "🟢 ATIVO" if bot._running else "🔴 PARADO",
+                help="Estado atual do bot"
+            )
+        
+        with col_position:
+            position_value = "COMPRADO" if bot.actual_trade_position else "VENDIDO"
+            st.metric(
+                "Posição Atual",
+                position_value,
+                delta="COMPRADO" if bot.actual_trade_position else "VENDIDO",
+                delta_color="normal" if bot.actual_trade_position else "inverse",
+                help="Posição atual do bot no mercado"
+            )
+        
+        with col_balance:
+            balance_delta = bot.last_stock_account_balance - bot.initial_balance
+            st.metric(
+                "Saldo",
+                f"{bot.last_stock_account_balance:.8f} {bot.stock_code}",
+                delta=f"{balance_delta:+.8f}",
+                delta_color="normal" if balance_delta >= 0 else "inverse",
+                help="Saldo atual e variação desde o início"
+            )
+        
+        # Indicadores Técnicos
+        st.subheader("📈 Indicadores Técnicos")
+        col_price, col_ema, col_macd = st.columns(3)
+        
+        with col_price:
+            current_price = df['close'].iloc[-1]
+            price_change = df['close'].pct_change().iloc[-1] * 100
+            st.metric(
+                "Preço Atual",
+                f"{current_price:.2f} {bot.config.quote_asset}",
+                delta=f"{price_change:+.2f}%",
+                delta_color="normal" if price_change >= 0 else "inverse",
+                help="Preço atual e variação percentual"
+            )
             
-        with col_metric2:
+            st.metric(
+                "Volume 24h",
+                f"{df['volume'].iloc[-1]:.2f}",
+                help="Volume de negociação nas últimas 24 horas"
+            )
+            
+            roi_value = df['roi'].iloc[-1] * 100
+            st.metric(
+                "ROI",
+                f"{roi_value:.2f}%",
+                delta=f"{roi_value:+.2f}%",
+                delta_color="normal" if roi_value >= 0 else "inverse",
+                help="Retorno sobre o investimento acumulado"
+            )
+        
+        with col_ema:
             st.metric("EMA 7", f"{df['ema_7'].iloc[-1]:.2f}")
             st.metric("EMA 25", f"{df['ema_25'].iloc[-1]:.2f}")
             st.metric("EMA 50", f"{df['ema_50'].iloc[-1]:.2f}")
             st.metric("EMA 100", f"{df['ema_100'].iloc[-1]:.2f}")
-            
-        with col_metric3:
-            st.metric("RSI", f"{df['rsi'].iloc[-1]:.2f}")
+        
+        with col_macd:
             st.metric("MACD", f"{df['macd_line'].iloc[-1]:.2f}")
             st.metric("Sinal MACD", f"{df['signal_line'].iloc[-1]:.2f}")
+            st.metric("RSI", f"{df['rsi'].iloc[-1]:.2f}")
             
-            # Exibe ROI com cor verde/vermelho
-            roi_value = df['roi'].iloc[-1] * 100
-            roi_color = "green" if roi_value >= 0 else "red"
-            st.metric("ROI", f"{roi_value:.2f}%", delta_color="off", 
-                     help="Retorno sobre o investimento acumulado",
-                     label_visibility="visible")
-            
-            # Exibe lucro/prejuízo atual
-            profit = bot.last_stock_account_balance - bot.initial_balance
-            profit_color = "green" if profit >= 0 else "red"
-            st.metric("Lucro/Prejuízo", 
-                     f"{profit:.2f} {bot.stock_code}", 
-                     delta_color="off",
-                     help="Diferença entre saldo atual e saldo inicial",
-                     label_visibility="visible")
-            
-            # Exibe drawdown máximo
-            max_drawdown = df['close'].max() - df['close'].min()
-            st.metric("Drawdown Máx.", f"{max_drawdown:.2f}")
-            
-        # Exibe últimas ordens
-        st.subheader("📉 Últimas Ordens")
-        if hasattr(bot, 'last_orders'):
-            for order in bot.last_orders[-5:]:  # Mostra as últimas 5 ordens
-                with st.expander(f"Ordem {order['orderId']}"):
-                    st.write(f"**Tipo:** {order['side']}")
-                    st.write(f"**Quantidade:** {order['origQty']}")
-                    st.write(f"**Preço:** {order.get('price', 'MARKET')}")
-                    st.write(f"**Data/Hora:** {order['timestamp']}")
+            # Drawdown máximo
+            max_drawdown = ((df['close'].max() - df['close'].min()) / df['close'].max()) * 100
+            st.metric(
+                "Drawdown Máx.",
+                f"{max_drawdown:.2f}%",
+                help="Maior queda percentual do preço"
+            )
         
-    # Aba de logs
-    st.sidebar.title("📜 Logs em Tempo Real")
+        # Último Trade
+        if hasattr(bot, 'last_trade') and bot.last_trade:
+            st.subheader("🔄 Último Trade")
+            trade_cols = st.columns(4)
+            with trade_cols[0]:
+                st.metric("Tipo", bot.last_trade['side'])
+            with trade_cols[1]:
+                st.metric("Quantidade", f"{bot.last_trade['quantity']:.8f}")
+            with trade_cols[2]:
+                st.metric("Preço", f"{bot.last_trade['price']:.2f}")
+            with trade_cols[3]:
+                st.metric("Horário", bot.last_trade['timestamp'])
     
-    # Container para logs com auto-scroll
-    log_container = st.sidebar.empty()
+    # Seção de Logs
+    st.sidebar.title("📜 Monitor em Tempo Real")
+    
+    # Tabs para diferentes tipos de logs
+    log_tabs = st.sidebar.tabs(["📊 Status", "📈 Sinais", "🔄 Trades"])
     
     def load_logs():
         try:
             with open('src/logs/trading_bot.log', 'r', encoding='utf-8') as f:
                 logs = f.readlines()
-                return logs[-30:]  # Últimas 30 entradas
+                return logs[-50:]  # Últimas 50 entradas
         except Exception as e:
             st.error(f"Erro ao ler arquivo de logs: {str(e)}")
             return []
     
-    # Atualiza o gráfico a cada 5 segundos
-    @st.cache_data(ttl=5)
-    def update_chart_data(bot):
-        bot.updateAllData()
-        df = bot.candle_data.copy()
-        df = calculate_indicators(df)
-        df['signal'] = strategy_signals(df)
-        return df
+    def parse_log_entry(log):
+        """Parseia entrada de log para classificar por tipo"""
+        if "STATUS DO BOT" in log:
+            return "status", log
+        elif "INDICADORES TÉCNICOS" in log:
+            return "sinais", log
+        elif "ORDEM EXECUTADA" in log:
+            return "trades", log
+        return "outros", log
     
     # Atualiza logs em tempo real
     if st.session_state.bot_running:
         logs = load_logs()
-        formatted_logs = "".join(reversed(logs))  # Inverte para mostrar mais recentes primeiro
-        log_container.code(formatted_logs, language="plain")
         
-        # Rerun a cada 2 segundos se o bot estiver rodando
-        time.sleep(2)
+        # Separa logs por categoria
+        status_logs = []
+        signal_logs = []
+        trade_logs = []
+        
+        for log in logs:
+            log_type, content = parse_log_entry(log)
+            if log_type == "status":
+                status_logs.append(content)
+            elif log_type == "sinais":
+                signal_logs.append(content)
+            elif log_type == "trades":
+                trade_logs.append(content)
+        
+        # Exibe logs nas respectivas tabs
+        with log_tabs[0]:  # Status
+            if status_logs:
+                st.code("".join(reversed(status_logs[-10:])), language="plain")
+            else:
+                st.info("Nenhum log de status disponível")
+                
+        with log_tabs[1]:  # Sinais
+            if signal_logs:
+                st.code("".join(reversed(signal_logs[-10:])), language="plain")
+            else:
+                st.info("Nenhum log de sinais disponível")
+                
+        with log_tabs[2]:  # Trades
+            if trade_logs:
+                st.code("".join(reversed(trade_logs[-10:])), language="plain")
+            else:
+                st.info("Nenhuma ordem executada ainda")
+        
+        # Rerun a cada 1 segundo para manter o monitoramento atualizado
+        time.sleep(1)
         st.rerun()
 
 if __name__ == "__main__":
