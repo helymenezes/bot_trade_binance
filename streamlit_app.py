@@ -28,11 +28,14 @@ st.title("📈 Binance Trading Bot - EMA Strategy")
 
 def init_bot(config):
     """Inicializa e retorna uma instância do bot trader"""
-    @st.cache_resource
-    def _init_bot(config):
+    if 'bot' not in st.session_state:
         try:
             # Verifica conexão com API Binance
             st.info("Verificando conexão com API Binance...")
+            
+            # Carrega variáveis de ambiente
+            from dotenv import load_dotenv
+            load_dotenv()
             
             # Cria configuração a partir dos parâmetros
             trading_config = TradingConfig(
@@ -54,8 +57,9 @@ def init_bot(config):
             if not test_data:
                 raise ConnectionError("Falha ao conectar com API Binance")
             
+            st.session_state.bot = bot
             st.success("Conexão com API Binance estabelecida com sucesso!")
-            return bot
+            
         except ConnectionError as ce:
             st.error(f"Erro de conexão: {str(ce)}")
             trade_logger.log_error("Erro de conexão com API Binance", ce)
@@ -64,11 +68,8 @@ def init_bot(config):
             st.error(f"Erro ao inicializar bot: {str(e)}")
             trade_logger.log_error("Erro ao inicializar bot", e)
             return None
-            
-    bot = _init_bot(config)
-    if bot is None:
-        st.stop()
-    return bot
+    
+    return st.session_state.bot
 
 # Configurações do bot
 def get_bot_config():
@@ -258,208 +259,253 @@ if 'bot_running' not in st.session_state:
 
 # Layout da aplicação
 def main():
-    # Obtém configurações e inicializa o bot
-    config = get_bot_config()
-    bot = init_bot(config)
-    
-    # Controles de execução
-    st.sidebar.subheader("🚦 Controle do Bot")
-    
-    if not st.session_state.bot_running:
-        if st.sidebar.button("▶️ Iniciar Trader", type="primary"):
-            st.session_state.bot_running = True
-            st.rerun()
-    else:
-        if st.sidebar.button("⏹️ Parar Trader", type="secondary"):
-            st.session_state.bot_running = False
-            st.rerun()
-    
-    # Atualiza dados
-    bot.updateAllData()
-    
-    # Executa o bot se estiver rodando
-    if st.session_state.bot_running and not bot._running:
-        bot.start()
-    elif not st.session_state.bot_running and bot._running:
-        bot.stop()
-    
-    # Executa um ciclo para atualizar o monitoramento
-    bot.execute()
-    
-    # Calcula indicadores
-    df = bot.candle_data.copy()
-    df = calculate_indicators(df)
-    df['signal'] = strategy_signals(df)
-    
-    # Layout principal
-    col1, col2 = st.columns([3, 1])
-    
-    with col1:
-        # Gráfico principal
-        fig = plot_ema_macd_roi(df)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-        # Status do Bot
-        st.subheader("📊 Status do Bot")
-        
-        # Métricas principais em 3 colunas
-        col_status, col_position, col_balance = st.columns(3)
-        
-        with col_status:
-            st.metric(
-                "Estado do Bot",
-                "🟢 ATIVO" if bot._running else "🔴 PARADO",
-                help="Estado atual do bot"
-            )
-        
-        with col_position:
-            position_value = "COMPRADO" if bot.actual_trade_position else "VENDIDO"
-            st.metric(
-                "Posição Atual",
-                position_value,
-                delta="COMPRADO" if bot.actual_trade_position else "VENDIDO",
-                delta_color="normal" if bot.actual_trade_position else "inverse",
-                help="Posição atual do bot no mercado"
-            )
-        
-        with col_balance:
-            balance_delta = bot.last_stock_account_balance - bot.initial_balance
-            st.metric(
-                "Saldo",
-                f"{bot.last_stock_account_balance:.8f} {bot.stock_code}",
-                delta=f"{balance_delta:+.8f}",
-                delta_color="normal" if balance_delta >= 0 else "inverse",
-                help="Saldo atual e variação desde o início"
-            )
-        
-        # Indicadores Técnicos
-        st.subheader("📈 Indicadores Técnicos")
-        col_price, col_ema, col_macd = st.columns(3)
-        
-        with col_price:
-            current_price = df['close'].iloc[-1]
-            price_change = df['close'].pct_change().iloc[-1] * 100
-            st.metric(
-                "Preço Atual",
-                f"{current_price:.2f} {bot.config.quote_asset}",
-                delta=f"{price_change:+.2f}%",
-                delta_color="normal" if price_change >= 0 else "inverse",
-                help="Preço atual e variação percentual"
-            )
+    try:
+        # Verifica variáveis de ambiente
+        if not os.getenv('BINANCE_API_KEY') or not os.getenv('BINANCE_SECRET_KEY'):
+            st.error("⚠️ Chaves da API Binance não encontradas!")
+            st.info("Copie o arquivo .env.example para .env e configure suas chaves.")
+            return
+
+        # Obtém configurações e inicializa o bot
+        with st.spinner("Inicializando..."):
+            config = get_bot_config()
+            bot = init_bot(config)
             
-            st.metric(
-                "Volume 24h",
-                f"{df['volume'].iloc[-1]:.2f}",
-                help="Volume de negociação nas últimas 24 horas"
-            )
-            
-            roi_value = df['roi'].iloc[-1] * 100
-            st.metric(
-                "ROI",
-                f"{roi_value:.2f}%",
-                delta=f"{roi_value:+.2f}%",
-                delta_color="normal" if roi_value >= 0 else "inverse",
-                help="Retorno sobre o investimento acumulado"
-            )
+            if bot is None:
+                st.error("❌ Falha ao inicializar o bot.")
+                return
         
-        with col_ema:
-            st.metric("EMA 7", f"{df['ema_7'].iloc[-1]:.2f}")
-            st.metric("EMA 25", f"{df['ema_25'].iloc[-1]:.2f}")
-            st.metric("EMA 50", f"{df['ema_50'].iloc[-1]:.2f}")
-            st.metric("EMA 100", f"{df['ema_100'].iloc[-1]:.2f}")
+        # Controles de execução
+        st.sidebar.subheader("🚦 Controle do Bot")
         
-        with col_macd:
-            st.metric("MACD", f"{df['macd_line'].iloc[-1]:.2f}")
-            st.metric("Sinal MACD", f"{df['signal_line'].iloc[-1]:.2f}")
-            st.metric("RSI", f"{df['rsi'].iloc[-1]:.2f}")
-            
-            # Drawdown máximo
-            max_drawdown = ((df['close'].max() - df['close'].min()) / df['close'].max()) * 100
-            st.metric(
-                "Drawdown Máx.",
-                f"{max_drawdown:.2f}%",
-                help="Maior queda percentual do preço"
-            )
+        if not st.session_state.bot_running:
+            if st.sidebar.button("▶️ Iniciar Trader", type="primary"):
+                st.session_state.bot_running = True
+                st.rerun()
+        else:
+            if st.sidebar.button("⏹️ Parar Trader", type="secondary"):
+                st.session_state.bot_running = False
+                st.rerun()
         
-        # Último Trade
-        if hasattr(bot, 'last_trade') and bot.last_trade:
-            st.subheader("🔄 Último Trade")
-            trade_cols = st.columns(4)
-            with trade_cols[0]:
-                st.metric("Tipo", bot.last_trade['side'])
-            with trade_cols[1]:
-                st.metric("Quantidade", f"{bot.last_trade['quantity']:.8f}")
-            with trade_cols[2]:
-                st.metric("Preço", f"{bot.last_trade['price']:.2f}")
-            with trade_cols[3]:
-                st.metric("Horário", bot.last_trade['timestamp'])
-    
-    # Seção de Logs
-    st.sidebar.title("📜 Monitor em Tempo Real")
-    
-    # Tabs para diferentes tipos de logs
-    log_tabs = st.sidebar.tabs(["📊 Status", "📈 Sinais", "🔄 Trades"])
-    
-    def load_logs():
+        # Atualiza dados e status do bot
+        with st.spinner("Atualizando dados do mercado..."):
+            try:
+                bot.updateAllData()
+                
+                if st.session_state.bot_running and not bot._running:
+                    bot.start()
+                    st.success("Bot iniciado com sucesso!")
+                elif not st.session_state.bot_running and bot._running:
+                    bot.stop()
+                    st.info("Bot parado com sucesso!")
+                
+                if st.session_state.bot_running:
+                    bot.execute()
+                    
+            except Exception as e:
+                st.error(f"❌ Erro durante execução: {str(e)}")
+                trade_logger.log_error("Erro durante execução do bot", e)
+                st.session_state.bot_running = False
+                return
+        
         try:
-            with open('src/logs/trading_bot.log', 'r', encoding='utf-8') as f:
-                logs = f.readlines()
-                return logs[-50:]  # Últimas 50 entradas
+            # Calcula indicadores
+            if bot.candle_data is not None:
+                df = bot.candle_data.copy()
+                df = calculate_indicators(df)
+                df['signal'] = strategy_signals(df)
+            else:
+                st.error("Não foi possível obter dados do mercado. Verifique sua conexão.")
+                return
+            
+            # Layout principal
+            col1, col2 = st.columns([3, 1])
+            
+            with col1:
+                # Gráfico principal
+                fig = plot_ema_macd_roi(df)
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                # Status do Bot
+                st.subheader("📊 Status do Bot")
+                
+                # Métricas principais em 3 colunas
+                col_status, col_position, col_balance = st.columns(3)
+                
+                with col_status:
+                    st.metric(
+                        "Estado do Bot",
+                        "🟢 ATIVO" if bot._running else "🔴 PARADO",
+                        help="Estado atual do bot"
+                    )
+                
+                with col_position:
+                    position_value = "COMPRADO" if bot.actual_trade_position else "VENDIDO"
+                    st.metric(
+                        "Posição Atual",
+                        position_value,
+                        delta="COMPRADO" if bot.actual_trade_position else "VENDIDO",
+                        delta_color="normal" if bot.actual_trade_position else "inverse",
+                        help="Posição atual do bot no mercado"
+                    )
+                
+                with col_balance:
+                    balance_delta = bot.last_stock_account_balance - bot.initial_balance
+                    st.metric(
+                        "Saldo",
+                        f"{bot.last_stock_account_balance:.8f} {bot.stock_code}",
+                        delta=f"{balance_delta:+.8f}",
+                        delta_color="normal" if balance_delta >= 0 else "inverse",
+                        help="Saldo atual e variação desde o início"
+                    )
+                
+                # Indicadores Técnicos
+                st.subheader("📈 Indicadores Técnicos")
+                col_price, col_ema, col_macd = st.columns(3)
+                
+                with col_price:
+                    current_price = df['close'].iloc[-1]
+                    price_change = df['close'].pct_change().iloc[-1] * 100
+                    st.metric(
+                        "Preço Atual",
+                        f"{current_price:.2f} {bot.config.quote_asset}",
+                        delta=f"{price_change:+.2f}%",
+                        delta_color="normal" if price_change >= 0 else "inverse",
+                        help="Preço atual e variação percentual"
+                    )
+                    
+                    st.metric(
+                        "Volume 24h",
+                        f"{df['volume'].iloc[-1]:.2f}",
+                        help="Volume de negociação nas últimas 24 horas"
+                    )
+                    
+                    roi_value = df['roi'].iloc[-1] * 100
+                    st.metric(
+                        "ROI",
+                        f"{roi_value:.2f}%",
+                        delta=f"{roi_value:+.2f}%",
+                        delta_color="normal" if roi_value >= 0 else "inverse",
+                        help="Retorno sobre o investimento acumulado"
+                    )
+                
+                with col_ema:
+                    st.metric("EMA 7", f"{df['ema_7'].iloc[-1]:.2f}")
+                    st.metric("EMA 25", f"{df['ema_25'].iloc[-1]:.2f}")
+                    st.metric("EMA 50", f"{df['ema_50'].iloc[-1]:.2f}")
+                    st.metric("EMA 100", f"{df['ema_100'].iloc[-1]:.2f}")
+                
+                with col_macd:
+                    st.metric("MACD", f"{df['macd_line'].iloc[-1]:.2f}")
+                    st.metric("Sinal MACD", f"{df['signal_line'].iloc[-1]:.2f}")
+                    st.metric("RSI", f"{df['rsi'].iloc[-1]:.2f}")
+                    
+                    # Drawdown máximo
+                    max_drawdown = ((df['close'].max() - df['close'].min()) / df['close'].max()) * 100
+                    st.metric(
+                        "Drawdown Máx.",
+                        f"{max_drawdown:.2f}%",
+                        help="Maior queda percentual do preço"
+                    )
+                
+                # Último Trade
+                if hasattr(bot, 'last_trade') and bot.last_trade:
+                    st.subheader("🔄 Último Trade")
+                    trade_cols = st.columns(4)
+                    with trade_cols[0]:
+                        st.metric("Tipo", bot.last_trade['side'])
+                    with trade_cols[1]:
+                        st.metric("Quantidade", f"{bot.last_trade['quantity']:.8f}")
+                    with trade_cols[2]:
+                        st.metric("Preço", f"{bot.last_trade['price']:.2f}")
+                    with trade_cols[3]:
+                        st.metric("Horário", bot.last_trade['timestamp'])
+            
+            # Seção de Logs
+            st.sidebar.title("📜 Monitor em Tempo Real")
+            
+            # Tabs para diferentes tipos de logs
+            log_tabs = st.sidebar.tabs(["📊 Status", "📈 Sinais", "🔄 Trades"])
+            
+            def load_logs():
+                try:
+                    with open('src/logs/trading_bot.log', 'r', encoding='utf-8') as f:
+                        logs = f.readlines()
+                        return logs[-50:]  # Últimas 50 entradas
+                except Exception as e:
+                    st.error(f"Erro ao ler arquivo de logs: {str(e)}")
+                    return []
+            
+            def parse_log_entry(log):
+                """Parseia entrada de log para classificar por tipo"""
+                if "STATUS DO BOT" in log:
+                    return "status", log
+                elif "INDICADORES TÉCNICOS" in log:
+                    return "sinais", log
+                elif "ORDEM EXECUTADA" in log:
+                    return "trades", log
+                return "outros", log
+            
+            # Atualiza logs em tempo real
+            if st.session_state.bot_running:
+                logs = load_logs()
+                
+                # Separa logs por categoria
+                status_logs = []
+                signal_logs = []
+                trade_logs = []
+                
+                for log in logs:
+                    log_type, content = parse_log_entry(log)
+                    if log_type == "status":
+                        status_logs.append(content)
+                    elif log_type == "sinais":
+                        signal_logs.append(content)
+                    elif log_type == "trades":
+                        trade_logs.append(content)
+                
+                # Exibe logs nas respectivas tabs
+                with log_tabs[0]:  # Status
+                    if status_logs:
+                        st.code("".join(reversed(status_logs[-10:])), language="plain")
+                    else:
+                        st.info("Nenhum log de status disponível")
+                        
+                with log_tabs[1]:  # Sinais
+                    if signal_logs:
+                        st.code("".join(reversed(signal_logs[-10:])), language="plain")
+                    else:
+                        st.info("Nenhum log de sinais disponível")
+                        
+                with log_tabs[2]:  # Trades
+                    if trade_logs:
+                        st.code("".join(reversed(trade_logs[-10:])), language="plain")
+                    else:
+                        st.info("Nenhuma ordem executada ainda")
+                
+                # Atualização automática
+                if 'update_counter' not in st.session_state:
+                    st.session_state.update_counter = 0
+                st.session_state.update_counter += 1
+                
+                # Mostra tempo de execução
+                st.sidebar.metric("⏱️ Tempo de Execução", 
+                                f"{st.session_state.update_counter} segundos")
+                
+                # Rerun a cada 1 segundo
+                time.sleep(1)
+                st.rerun()
+                
         except Exception as e:
-            st.error(f"Erro ao ler arquivo de logs: {str(e)}")
-            return []
-    
-    def parse_log_entry(log):
-        """Parseia entrada de log para classificar por tipo"""
-        if "STATUS DO BOT" in log:
-            return "status", log
-        elif "INDICADORES TÉCNICOS" in log:
-            return "sinais", log
-        elif "ORDEM EXECUTADA" in log:
-            return "trades", log
-        return "outros", log
-    
-    # Atualiza logs em tempo real
-    if st.session_state.bot_running:
-        logs = load_logs()
-        
-        # Separa logs por categoria
-        status_logs = []
-        signal_logs = []
-        trade_logs = []
-        
-        for log in logs:
-            log_type, content = parse_log_entry(log)
-            if log_type == "status":
-                status_logs.append(content)
-            elif log_type == "sinais":
-                signal_logs.append(content)
-            elif log_type == "trades":
-                trade_logs.append(content)
-        
-        # Exibe logs nas respectivas tabs
-        with log_tabs[0]:  # Status
-            if status_logs:
-                st.code("".join(reversed(status_logs[-10:])), language="plain")
-            else:
-                st.info("Nenhum log de status disponível")
-                
-        with log_tabs[1]:  # Sinais
-            if signal_logs:
-                st.code("".join(reversed(signal_logs[-10:])), language="plain")
-            else:
-                st.info("Nenhum log de sinais disponível")
-                
-        with log_tabs[2]:  # Trades
-            if trade_logs:
-                st.code("".join(reversed(trade_logs[-10:])), language="plain")
-            else:
-                st.info("Nenhuma ordem executada ainda")
-        
-        # Rerun a cada 1 segundo para manter o monitoramento atualizado
-        time.sleep(1)
-        st.rerun()
+            st.error(f"❌ Erro ao atualizar interface: {str(e)}")
+            trade_logger.log_error("Erro ao atualizar interface", e)
+            st.session_state.bot_running = False
+            
+    except Exception as e:
+        st.error(f"❌ Erro geral: {str(e)}")
+        trade_logger.log_error("Erro geral na interface", e)
+        st.session_state.bot_running = False
 
 if __name__ == "__main__":
     main()

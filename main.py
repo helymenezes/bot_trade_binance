@@ -1,12 +1,13 @@
 import os
-import time
+import asyncio
 import requests
 from datetime import datetime
 import logging
 import pandas as pd
 import numpy as np
-from typing import Dict, Any, Optional, List, Tuple
-from binance.client import Client
+from typing import Dict, Any, Optional, List, Tuple, Union
+from binance.async_client import AsyncClient
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from binance.enums import SIDE_BUY, SIDE_SELL, ORDER_TYPE_MARKET
 from binance.exceptions import BinanceAPIException
 from dotenv import load_dotenv
@@ -79,6 +80,7 @@ class BinanceTraderBot:
         self.candle_period = config.candle_interval
         self.stop_loss = config.stop_loss
         self.take_profit = config.take_profit
+        self.traded_quantity = 0.0  # Quantidade a ser negociada
         
         self.actual_trade_position = False
         self._running = False  # Estado de execução do bot
@@ -148,6 +150,16 @@ class BinanceTraderBot:
                     self.last_stock_account_balance = self.getLastStockAccountBalance()
                     self.actual_trade_position = self.getActualTradePosition()
                     self.candle_data = self.getStockData_ClosePrice_OpenTime()
+                    
+                    # Atualiza a quantidade a ser negociada se não estiver em posição
+                    if not self.actual_trade_position:
+                        usdt_balance = 0.0
+                        for balance in self.account_data["balances"]:
+                            if balance["asset"] == self.config.quote_asset:
+                                usdt_balance = float(balance["free"])
+                                break
+                        btc_price = float(self.client_binance.get_symbol_ticker(symbol=self.operation_code)['price'])
+                        self.traded_quantity = round((usdt_balance * (self.traded_percentage / 100)) / btc_price, 5)
                 except Exception as e:
                     trade_logger.log_error("Erro ao atualizar dados da conta", e)
                     raise
@@ -239,10 +251,11 @@ class BinanceTraderBot:
         Executa ordem de compra no mercado.
         
         Fluxo:
-        1. Valida quantidade
-        2. Executa ordem de mercado
-        3. Atualiza posição
-        4. Envia alertas/logs
+        1. Calcula quantidade otimizada
+        2. Valida quantidade
+        3. Executa ordem de mercado
+        4. Atualiza posição
+        5. Envia alertas/logs
         
         Returns:
             Optional[Dict[str, Any]]: Dicionário com detalhes da ordem executada ou None em caso de falha
@@ -253,14 +266,30 @@ class BinanceTraderBot:
         """
         if not self.actual_trade_position:
             try:
+                # Calcula quantidade otimizada
                 quantity = self._calculate_buy_quantity()
+                
+                # Valida a quantidade
                 self._validate_trade_quantity(quantity)
-                order = self._execute_market_order(SIDE_BUY, quantity)
-                self._update_position_after_trade(True)
-                self._send_trade_alert("COMPRA", order)
+                
+                # Executa a ordem com a quantidade já formatada
+                order = self.client_binance.create_order(
+                    symbol=self.operation_code,
+                    side=SIDE_BUY,
+                    type=ORDER_TYPE_MARKET,
+                    quantity=quantity
+                )
+                
+                self.actual_trade_position = True
+                self.createLogOrder(order)
+                trade_logger.log_info(f"Ordem de compra executada: {order['orderId']}")
                 return order
+                
             except BinanceAPIException as e:
-                self._handle_trade_error("compra", e)
+                trade_logger.log_error(f"Erro ao executar ordem de compra: {str(e)}")
+                return None
+            except ValueError as e:
+                trade_logger.log_error(f"Erro de validação na ordem de compra: {str(e)}")
                 return None
         return None
 
@@ -269,7 +298,7 @@ class BinanceTraderBot:
         Executa ordem de venda no mercado.
         
         Fluxo:
-        1. Calcula quantidade disponível
+        1. Calcula quantidade otimizada
         2. Valida quantidade
         3. Executa ordem de mercado
         4. Atualiza posição
@@ -284,14 +313,34 @@ class BinanceTraderBot:
         """
         if self.actual_trade_position:
             try:
+                # Calcula quantidade otimizada
                 quantity = self._calculate_sell_quantity()
+                
+                # Valida a quantidade
                 self._validate_trade_quantity(quantity)
-                order = self._execute_market_order(SIDE_SELL, quantity)
-                self._update_position_after_trade(False)
-                self._send_trade_alert("VENDA", order)
+                
+                # Executa a ordem
+                # Formata a quantidade para garantir o formato exato que a API espera
+                formatted_quantity = f"{quantity:.8f}".rstrip('0').rstrip('.')
+                
+                # Executa a ordem com a quantidade formatada
+                order = self.client_binance.create_order(
+                    symbol=self.operation_code,
+                    side=SIDE_SELL,
+                    type=ORDER_TYPE_MARKET,
+                    quantity=formatted_quantity
+                )
+                
+                self.actual_trade_position = False
+                self.createLogOrder(order)
+                trade_logger.log_info(f"Ordem de venda executada: {order['orderId']}")
                 return order
+                
             except BinanceAPIException as e:
-                self._handle_trade_error("venda", e)
+                trade_logger.log_error(f"Erro ao executar ordem de venda: {str(e)}")
+                return None
+            except ValueError as e:
+                trade_logger.log_error(f"Erro de validação na ordem de venda: {str(e)}")
                 return None
         return None
 
@@ -312,25 +361,133 @@ class BinanceTraderBot:
         self.actual_trade_position = new_position
         self.updateAllData()
 
+    def get_symbol_info(self):
+        """Obtém as regras de trading do par"""
+        exchange_info = self.client_binance.get_exchange_info()
+        for symbol_info in exchange_info['symbols']:
+            if symbol_info['symbol'] == self.operation_code:
+                return symbol_info
+        return None
+
     def _calculate_buy_quantity(self) -> float:
-        """Calcula a quantidade a ser comprada"""
+        """Calcula a quantidade a ser comprada considerando as regras do par"""
         usdt_balance = 0.0
         for balance in self.account_data["balances"]:
             if balance["asset"] == self.config.quote_asset:
                 usdt_balance = float(balance["free"])
                 break
+                
         btc_price = float(self.client_binance.get_symbol_ticker(symbol=self.operation_code)['price'])
-        quantity = (usdt_balance * (self.traded_percentage / 100)) / btc_price
-        return round(quantity, 5)
+        raw_quantity = (usdt_balance * (self.traded_percentage / 100)) / btc_price
+        
+        # Obtém regras do par
+        symbol_info = self.get_symbol_info()
+        if not symbol_info:
+            raise ValueError(f"Não foi possível obter informações do par {self.operation_code}")
+            
+        # Encontra as regras de LOT_SIZE
+        lot_size_filter = next((f for f in symbol_info['filters'] if f['filterType'] == 'LOT_SIZE'), None)
+        if not lot_size_filter:
+            raise ValueError("Filtro LOT_SIZE não encontrado")
+            
+        step_size = float(lot_size_filter['stepSize'])
+        min_qty = float(lot_size_filter['minQty'])
+        
+        # Ajusta a precisão baseado no stepSize
+        precision = len(str(step_size).rstrip('0').split('.')[-1])
+        quantity = max(min_qty, raw_quantity - (raw_quantity % step_size))
+        
+        # Formata a quantidade para garantir o formato exato que a API espera
+        formatted_quantity = f"{{:.{precision}f}}".format(quantity)
+        
+        # Remove zeros à direita mantendo a precisão mínima necessária
+        if '.' in formatted_quantity:
+            formatted_quantity = formatted_quantity.rstrip('0')
+            if formatted_quantity.endswith('.'):
+                formatted_quantity = formatted_quantity[:-1]
+        
+        # Validação final para garantir que corresponde ao padrão exigido
+        import re
+        if not re.match(r'^([0-9]{1,20})(\.[0-9]{1,20})?$', formatted_quantity):
+            raise ValueError(f"Quantidade formatada inválida: {formatted_quantity}")
+        
+        return formatted_quantity  # Retorna string ao invés de float para manter a formatação exata
 
     def _calculate_sell_quantity(self) -> float:
-        """Calcula a quantidade a ser vendida"""
-        return int(self.last_stock_account_balance * 1000) / 1000
+        """Calcula a quantidade a ser vendida considerando as regras do par"""
+        raw_quantity = self.last_stock_account_balance
+        
+        # Obtém regras do par
+        symbol_info = self.get_symbol_info()
+        if not symbol_info:
+            raise ValueError(f"Não foi possível obter informações do par {self.operation_code}")
+            
+        # Encontra as regras de LOT_SIZE
+        lot_size_filter = next((f for f in symbol_info['filters'] if f['filterType'] == 'LOT_SIZE'), None)
+        if not lot_size_filter:
+            raise ValueError("Filtro LOT_SIZE não encontrado")
+            
+        step_size = float(lot_size_filter['stepSize'])
+        min_qty = float(lot_size_filter['minQty'])
+        
+        # Ajusta a precisão baseado no stepSize
+        precision = len(str(step_size).rstrip('0').split('.')[-1])
+        quantity = max(min_qty, raw_quantity - (raw_quantity % step_size))
+        
+        # Formata a quantidade para garantir o formato exato que a API espera
+        formatted_quantity = f"{{:.{precision}f}}".format(quantity)
+        
+        # Remove zeros à direita mantendo a precisão mínima necessária
+        if '.' in formatted_quantity:
+            formatted_quantity = formatted_quantity.rstrip('0')
+            if formatted_quantity.endswith('.'):
+                formatted_quantity = formatted_quantity[:-1]
+        
+        # Validação final para garantir que corresponde ao padrão exigido
+        import re
+        if not re.match(r'^([0-9]{1,20})(\.[0-9]{1,20})?$', formatted_quantity):
+            raise ValueError(f"Quantidade formatada inválida: {formatted_quantity}")
+        
+        return formatted_quantity  # Retorna string ao invés de float para manter a formatação exata
 
-    def _validate_trade_quantity(self, quantity: float) -> None:
-        """Valida a quantidade a ser negociada"""
-        if quantity <= 0:
+    def _validate_trade_quantity(self, quantity: Union[str, float]) -> None:
+        """Valida a quantidade a ser negociada considerando as regras do par"""
+        # Converte para float para validações
+        qty = float(quantity) if isinstance(quantity, str) else quantity
+        if qty <= 0:
             raise ValueError("Quantidade de trade inválida")
+            
+        # Obtém regras do par
+        symbol_info = self.get_symbol_info()
+        if not symbol_info:
+            raise ValueError(f"Não foi possível obter informações do par {self.operation_code}")
+            
+        # Valida LOT_SIZE
+        lot_size_filter = next((f for f in symbol_info['filters'] if f['filterType'] == 'LOT_SIZE'), None)
+        if lot_size_filter:
+            min_qty = float(lot_size_filter['minQty'])
+            max_qty = float(lot_size_filter['maxQty'])
+            step_size = float(lot_size_filter['stepSize'])
+            
+            if qty < min_qty:
+                raise ValueError(f"Quantidade menor que o mínimo permitido ({min_qty})")
+            if qty > max_qty:
+                raise ValueError(f"Quantidade maior que o máximo permitido ({max_qty})")
+            
+            # Verifica se a quantidade é múltipla do stepSize
+            remainder = qty % step_size
+            if abs(remainder) > 1e-10:  # Usa tolerância para comparação de float
+                raise ValueError(f"Quantidade deve ser múltipla de {step_size}")
+                
+        # Valida MIN_NOTIONAL
+        min_notional_filter = next((f for f in symbol_info['filters'] if f['filterType'] == 'MIN_NOTIONAL'), None)
+        if min_notional_filter:
+            price = float(self.client_binance.get_symbol_ticker(symbol=self.operation_code)['price'])
+            notional = qty * price
+            min_notional = float(min_notional_filter['minNotional'])
+            
+            if notional < min_notional:
+                raise ValueError(f"Valor total da ordem (quantidade * preço) deve ser maior que {min_notional}")
 
     def _handle_trade_error(self, trade_type: str, error: Exception) -> None:
         """Trata erros durante execução de trades"""
