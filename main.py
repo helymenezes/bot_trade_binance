@@ -1,20 +1,18 @@
+#atualização do arquivo main.py 1.1.3
 import os
-import asyncio
-import requests
+import time
 from datetime import datetime
-import logging
 import pandas as pd
-import numpy as np
-from typing import Dict, Any, Optional, List, Tuple, Union
-from binance.async_client import AsyncClient
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from typing import Dict, Any, Optional, Union
 from binance.enums import SIDE_BUY, SIDE_SELL, ORDER_TYPE_MARKET
 from binance.exceptions import BinanceAPIException
+from binance import Client
 from dotenv import load_dotenv
 from logger import trade_logger
 from dataclasses import dataclass
 from src.indicators import calculate_indicators, strategy_signals
 from src.monitor import BotMonitor
+from decimal import Decimal, ROUND_DOWN
 
 # Carrega variáveis de ambiente
 load_dotenv()
@@ -48,29 +46,8 @@ class TradingConfig:
         )
 
 
-# Configurar API
-
 class BinanceTraderBot:
-    """Classe principal do bot de trading para a Binance.
-    
-    Attributes:
-        stock_code (str): Código do ativo a ser negociado (ex: 'BTC')
-        operation_code (str): Par de negociação (ex: 'BTCUSDC')
-        traded_quantity (float): Quantidade a ser negociada
-        traded_percentage (float): Porcentagem do saldo a ser usada
-        candle_period (str): Período das velas (ex: '1h')
-        actual_trade_position (bool): Indica se está em posição comprada
-        _running (bool): Estado de execução do bot
-        initial_balance (float): Saldo inicial para cálculo de ROI
-        stop_loss (float): Stop loss em porcentagem
-        take_profit (float): Take profit em porcentagem
-        account_data (dict): Dados da conta Binance
-        last_stock_account_balance (float): Último saldo do ativo
-        candle_data (pd.DataFrame): Dados históricos do ativo
-        api_key (str): Chave API da Binance
-        secret_key (str): Chave secreta da Binance
-        client_binance (Client): Instância do cliente Binance
-    """
+    """Classe principal do bot de trading para a Binance."""
     
     def __init__(self, config: TradingConfig):
         self.config = config
@@ -80,13 +57,12 @@ class BinanceTraderBot:
         self.candle_period = config.candle_interval
         self.stop_loss = config.stop_loss
         self.take_profit = config.take_profit
-        self.traded_quantity = 0.0  # Quantidade a ser negociada
+        self.traded_quantity = 0.0
         
         self.actual_trade_position = False
-        self._running = False  # Estado de execução do bot
-        self.initial_balance = 0.0  # Saldo inicial para cálculo de ROI
+        self._running = False
+        self.initial_balance = 0.0
         
-        # Inicialização dos atributos de dados
         self.account_data = None
         self.last_stock_account_balance = 0.0
         self.candle_data = None
@@ -103,22 +79,20 @@ class BinanceTraderBot:
                 self.config.secret_key,
                 tld='com'
             )
-            
-            # Configura timeout para todas as requisições
             self.client_binance.session.headers.update({
                 'Connection': 'keep-alive',
                 'Keep-Alive': '30'
             })
             
             # Testa a conexão com retry
-            max_retries = 5  # Aumenta o número de tentativas
-            retry_delay = 10  # Aumenta o delay inicial
+            max_retries = 5
+            retry_delay = 10
             for attempt in range(max_retries):
                 try:
                     self.client_binance.ping()
                     break
                 except Exception as e:
-                    if attempt == max_retries - 1:  # Última tentativa
+                    if attempt == max_retries - 1:
                         trade_logger.log_error(f"Falha na conexão após {max_retries} tentativas", e)
                         raise
                     trade_logger.log_info(f"Tentativa {attempt + 1} falhou, tentando novamente em {retry_delay}s...")
@@ -133,13 +107,12 @@ class BinanceTraderBot:
 
     def updateAllData(self):
         """Atualiza todos os dados da conta com mecanismo de retry"""
-        max_retries = 5  # Aumenta o número de tentativas
-        retry_delay = 10  # Aumenta o delay inicial
+        max_retries = 5
+        retry_delay = 10
         
         for attempt in range(max_retries):
             try:
                 try:
-                    # Tenta ping na API primeiro para verificar conexão
                     self.client_binance.ping()
                 except Exception as e:
                     trade_logger.log_error("Erro ao fazer ping na API", e)
@@ -164,7 +137,6 @@ class BinanceTraderBot:
                     trade_logger.log_error("Erro ao atualizar dados da conta", e)
                     raise
                 
-                # Inicializa saldo inicial na primeira execução
                 if self.initial_balance == 0.0 and self.last_stock_account_balance > 0:
                     self.initial_balance = self.last_stock_account_balance
                     trade_logger.log_info(f"Saldo inicial definido: {self.initial_balance}")
@@ -172,29 +144,22 @@ class BinanceTraderBot:
                 # Verifica stop loss e take profit se estiver em posição
                 if self.actual_trade_position and len(self.candle_data) > 0:
                     current_price = self.candle_data['close'].iloc[-1]
-                    entry_price = self.candle_data['close'].iloc[-2]  # Preço de entrada
-                    
-                    # Calcula variação percentual
+                    entry_price = self.candle_data['close'].iloc[-2]
                     price_change = ((current_price - entry_price) / entry_price) * 100
-                    
-                    # Verifica stop loss
                     if price_change <= -self.stop_loss:
                         trade_logger.log_info(f"Stop loss atingido: {price_change:.2f}%")
                         self.sellStock()
-                    
-                    # Verifica take profit
                     if price_change >= self.take_profit:
                         trade_logger.log_info(f"Take profit atingido: {price_change:.2f}%")
                         self.sellStock()
                 
-                # Se chegou aqui, a atualização foi bem sucedida
                 return
                 
             except BinanceAPIException as e:
-                if attempt < max_retries - 1:  # Se ainda não é a última tentativa
+                if attempt < max_retries - 1:
                     trade_logger.log_info(f"Tentativa {attempt + 1} falhou. Tentando novamente em {retry_delay} segundos...")
                     time.sleep(retry_delay)
-                    retry_delay *= 2  # Aumenta o tempo de espera entre tentativas
+                    retry_delay *= 2
                 else:
                     trade_logger.log_error("Erro ao atualizar dados após várias tentativas", e)
                     raise
@@ -203,12 +168,9 @@ class BinanceTraderBot:
                 raise
 
     def getUpdatedAccountData(self):
-        """Busca informações atualizadas da conta Binance"""
         return self.client_binance.get_account()
 
-
     def getLastStockAccountBalance(self):
-        """Busca o último balanço da conta na stock escolhida"""
         if self.account_data and "balances" in self.account_data:
             for stock in self.account_data["balances"]:
                 if stock["asset"] == self.stock_code:
@@ -216,75 +178,46 @@ class BinanceTraderBot:
         return 0.0
 
     def getActualTradePosition(self):
-        """Verifica se a posição atual é comprada ou vendida"""
         return self.last_stock_account_balance > 0.001
 
     def getStockData_ClosePrice_OpenTime(self):
-        """Busca os dados do ativo no período"""
         try:
             candles = self.client_binance.get_klines(
                 symbol=self.operation_code,
                 interval=self.candle_period,
                 limit=500
             )
-            
             df = pd.DataFrame(candles, columns=[
                 "open_time", "open", "high", "low", "close",
                 "volume", "close_time", "quote_asset_volume", "number_of_trades",
                 "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume", "--"
             ])
-            
             df = df[["open", "high", "low", "close", "volume", "open_time"]]
             for col in ["open", "high", "low", "close", "volume"]:
                 df[col] = pd.to_numeric(df[col])
             df["open_time"] = pd.to_datetime(df["open_time"], unit="ms").dt.tz_localize("UTC")
             df["open_time"] = df["open_time"].dt.tz_convert("America/Sao_Paulo")
-            
             return df
         except Exception as e:
             trade_logger.log_error("Erro ao buscar dados do ativo", e)
             raise
 
-    
     def buyStock(self) -> Optional[Dict[str, Any]]:
-        """
-        Executa ordem de compra no mercado.
-        
-        Fluxo:
-        1. Calcula quantidade otimizada
-        2. Valida quantidade
-        3. Executa ordem de mercado
-        4. Atualiza posição
-        5. Envia alertas/logs
-        
-        Returns:
-            Optional[Dict[str, Any]]: Dicionário com detalhes da ordem executada ou None em caso de falha
-            
-        Raises:
-            BinanceAPIException: Em caso de erro na API da Binance
-            ValueError: Se a quantidade negociada for inválida
-        """
         if not self.actual_trade_position:
             try:
-                # Calcula quantidade otimizada
+                # Calcula quantidade otimizada utilizando Decimal para precisão
                 quantity = self._calculate_buy_quantity()
-                
-                # Valida a quantidade
                 self._validate_trade_quantity(quantity)
-                
-                # Executa a ordem com a quantidade já formatada
                 order = self.client_binance.create_order(
                     symbol=self.operation_code,
                     side=SIDE_BUY,
                     type=ORDER_TYPE_MARKET,
                     quantity=quantity
                 )
-                
                 self.actual_trade_position = True
                 self.createLogOrder(order)
                 trade_logger.log_info(f"Ordem de compra executada: {order['orderId']}")
                 return order
-                
             except BinanceAPIException as e:
                 trade_logger.log_error(f"Erro ao executar ordem de compra: {str(e)}")
                 return None
@@ -294,48 +227,21 @@ class BinanceTraderBot:
         return None
 
     def sellStock(self) -> Optional[Dict[str, Any]]:
-        """
-        Executa ordem de venda no mercado.
-        
-        Fluxo:
-        1. Calcula quantidade otimizada
-        2. Valida quantidade
-        3. Executa ordem de mercado
-        4. Atualiza posição
-        5. Envia alertas/logs
-        
-        Returns:
-            Optional[Dict[str, Any]]: Dicionário com detalhes da ordem executada ou None em caso de falha
-            
-        Raises:
-            BinanceAPIException: Em caso de erro na API da Binance
-            ValueError: Se a quantidade negociada for inválida
-        """
         if self.actual_trade_position:
             try:
-                # Calcula quantidade otimizada
+                # Calcula quantidade de venda utilizando Decimal para precisão
                 quantity = self._calculate_sell_quantity()
-                
-                # Valida a quantidade
                 self._validate_trade_quantity(quantity)
-                
-                # Executa a ordem
-                # Formata a quantidade para garantir o formato exato que a API espera
-                formatted_quantity = f"{quantity:.8f}".rstrip('0').rstrip('.')
-                
-                # Executa a ordem com a quantidade formatada
                 order = self.client_binance.create_order(
                     symbol=self.operation_code,
                     side=SIDE_SELL,
                     type=ORDER_TYPE_MARKET,
-                    quantity=formatted_quantity
+                    quantity=quantity
                 )
-                
                 self.actual_trade_position = False
                 self.createLogOrder(order)
                 trade_logger.log_info(f"Ordem de venda executada: {order['orderId']}")
                 return order
-                
             except BinanceAPIException as e:
                 trade_logger.log_error(f"Erro ao executar ordem de venda: {str(e)}")
                 return None
@@ -345,7 +251,6 @@ class BinanceTraderBot:
         return None
 
     def _execute_market_order(self, side: str, quantity: float) -> Dict[str, Any]:
-        """Executa uma ordem de mercado"""
         order = self.client_binance.create_order(
             symbol=self.operation_code,
             side=side,
@@ -357,112 +262,94 @@ class BinanceTraderBot:
         return order
 
     def _update_position_after_trade(self, new_position: bool) -> None:
-        """Atualiza o estado da posição após uma trade"""
         self.actual_trade_position = new_position
         self.updateAllData()
 
     def get_symbol_info(self):
-        """Obtém as regras de trading do par"""
         exchange_info = self.client_binance.get_exchange_info()
         for symbol_info in exchange_info['symbols']:
             if symbol_info['symbol'] == self.operation_code:
                 return symbol_info
         return None
 
-    def _calculate_buy_quantity(self) -> float:
-        """Calcula a quantidade a ser comprada considerando as regras do par"""
+    def _calculate_buy_quantity(self) -> str:
+        """
+        Calcula a quantidade a ser comprada utilizando o módulo Decimal para arredondar
+        corretamente de acordo com as regras do par (LOT_SIZE).
+        """
+        # Busca saldo da moeda de cotação
         usdt_balance = 0.0
         for balance in self.account_data["balances"]:
             if balance["asset"] == self.config.quote_asset:
                 usdt_balance = float(balance["free"])
                 break
-                
         btc_price = float(self.client_binance.get_symbol_ticker(symbol=self.operation_code)['price'])
         raw_quantity = (usdt_balance * (self.traded_percentage / 100)) / btc_price
-        
-        # Obtém regras do par
-        symbol_info = self.get_symbol_info()
-        if not symbol_info:
-            raise ValueError(f"Não foi possível obter informações do par {self.operation_code}")
-            
-        # Encontra as regras de LOT_SIZE
-        lot_size_filter = next((f for f in symbol_info['filters'] if f['filterType'] == 'LOT_SIZE'), None)
-        if not lot_size_filter:
-            raise ValueError("Filtro LOT_SIZE não encontrado")
-            
-        step_size = float(lot_size_filter['stepSize'])
-        min_qty = float(lot_size_filter['minQty'])
-        
-        # Ajusta a precisão baseado no stepSize
-        precision = len(str(step_size).rstrip('0').split('.')[-1])
-        quantity = max(min_qty, raw_quantity - (raw_quantity % step_size))
-        
-        # Formata a quantidade para garantir o formato exato que a API espera
-        formatted_quantity = f"{{:.{precision}f}}".format(quantity)
-        
-        # Remove zeros à direita mantendo a precisão mínima necessária
-        if '.' in formatted_quantity:
-            formatted_quantity = formatted_quantity.rstrip('0')
-            if formatted_quantity.endswith('.'):
-                formatted_quantity = formatted_quantity[:-1]
-        
-        # Validação final para garantir que corresponde ao padrão exigido
-        import re
-        if not re.match(r'^([0-9]{1,20})(\.[0-9]{1,20})?$', formatted_quantity):
-            raise ValueError(f"Quantidade formatada inválida: {formatted_quantity}")
-        
-        return formatted_quantity  # Retorna string ao invés de float para manter a formatação exata
 
-    def _calculate_sell_quantity(self) -> float:
-        """Calcula a quantidade a ser vendida considerando as regras do par"""
-        raw_quantity = self.last_stock_account_balance
-        
-        # Obtém regras do par
         symbol_info = self.get_symbol_info()
         if not symbol_info:
             raise ValueError(f"Não foi possível obter informações do par {self.operation_code}")
-            
-        # Encontra as regras de LOT_SIZE
         lot_size_filter = next((f for f in symbol_info['filters'] if f['filterType'] == 'LOT_SIZE'), None)
         if not lot_size_filter:
             raise ValueError("Filtro LOT_SIZE não encontrado")
-            
-        step_size = float(lot_size_filter['stepSize'])
-        min_qty = float(lot_size_filter['minQty'])
         
-        # Ajusta a precisão baseado no stepSize
-        precision = len(str(step_size).rstrip('0').split('.')[-1])
-        quantity = max(min_qty, raw_quantity - (raw_quantity % step_size))
+        # Converte step_size e min_qty para Decimal
+        step_size = Decimal(lot_size_filter['stepSize'])
+        min_qty = Decimal(lot_size_filter['minQty'])
+        # Converte raw_quantity para Decimal
+        raw_quantity_dec = Decimal(str(raw_quantity))
+        # Determina o número de casas decimais a partir do step_size
+        decimal_places = abs(step_size.as_tuple().exponent)
+        # Arredonda para baixo usando ROUND_DOWN
+        quantity_dec = raw_quantity_dec.quantize(Decimal('1e-{}'.format(decimal_places)), rounding=ROUND_DOWN)
+        quantity_dec = max(min_qty, quantity_dec)
+        # Formata a quantidade com a quantidade correta de casas decimais
+        formatted_quantity = format(quantity_dec, f'.{decimal_places}f').rstrip('0').rstrip('.') if '.' in format(quantity_dec, f'.{decimal_places}f') else format(quantity_dec, f'.{decimal_places}f')
         
-        # Formata a quantidade para garantir o formato exato que a API espera
-        formatted_quantity = f"{{:.{precision}f}}".format(quantity)
-        
-        # Remove zeros à direita mantendo a precisão mínima necessária
-        if '.' in formatted_quantity:
-            formatted_quantity = formatted_quantity.rstrip('0')
-            if formatted_quantity.endswith('.'):
-                formatted_quantity = formatted_quantity[:-1]
-        
-        # Validação final para garantir que corresponde ao padrão exigido
         import re
         if not re.match(r'^([0-9]{1,20})(\.[0-9]{1,20})?$', formatted_quantity):
             raise ValueError(f"Quantidade formatada inválida: {formatted_quantity}")
         
-        return formatted_quantity  # Retorna string ao invés de float para manter a formatação exata
+        return formatted_quantity
+
+    def _calculate_sell_quantity(self) -> str:
+        """
+        Calcula a quantidade a ser vendida utilizando o módulo Decimal para arredondar
+        corretamente de acordo com as regras do par (LOT_SIZE).
+        """
+        raw_quantity = self.last_stock_account_balance
+
+        symbol_info = self.get_symbol_info()
+        if not symbol_info:
+            raise ValueError(f"Não foi possível obter informações do par {self.operation_code}")
+        lot_size_filter = next((f for f in symbol_info['filters'] if f['filterType'] == 'LOT_SIZE'), None)
+        if not lot_size_filter:
+            raise ValueError("Filtro LOT_SIZE não encontrado")
+        
+        step_size = Decimal(lot_size_filter['stepSize'])
+        min_qty = Decimal(lot_size_filter['minQty'])
+        raw_quantity_dec = Decimal(str(raw_quantity))
+        decimal_places = abs(step_size.as_tuple().exponent)
+        quantity_dec = raw_quantity_dec.quantize(Decimal('1e-{}'.format(decimal_places)), rounding=ROUND_DOWN)
+        quantity_dec = max(min_qty, quantity_dec)
+        formatted_quantity = format(quantity_dec, f'.{decimal_places}f').rstrip('0').rstrip('.') if '.' in format(quantity_dec, f'.{decimal_places}f') else format(quantity_dec, f'.{decimal_places}f')
+        
+        import re
+        if not re.match(r'^([0-9]{1,20})(\.[0-9]{1,20})?$', formatted_quantity):
+            raise ValueError(f"Quantidade formatada inválida: {formatted_quantity}")
+        
+        return formatted_quantity
 
     def _validate_trade_quantity(self, quantity: Union[str, float]) -> None:
         """Valida a quantidade a ser negociada considerando as regras do par"""
-        # Converte para float para validações
         qty = float(quantity) if isinstance(quantity, str) else quantity
         if qty <= 0:
             raise ValueError("Quantidade de trade inválida")
             
-        # Obtém regras do par
         symbol_info = self.get_symbol_info()
         if not symbol_info:
             raise ValueError(f"Não foi possível obter informações do par {self.operation_code}")
             
-        # Valida LOT_SIZE
         lot_size_filter = next((f for f in symbol_info['filters'] if f['filterType'] == 'LOT_SIZE'), None)
         if lot_size_filter:
             min_qty = float(lot_size_filter['minQty'])
@@ -474,12 +361,10 @@ class BinanceTraderBot:
             if qty > max_qty:
                 raise ValueError(f"Quantidade maior que o máximo permitido ({max_qty})")
             
-            # Verifica se a quantidade é múltipla do stepSize
             remainder = qty % step_size
-            if abs(remainder) > 1e-10:  # Usa tolerância para comparação de float
+            if abs(remainder) > 1e-10:
                 raise ValueError(f"Quantidade deve ser múltipla de {step_size}")
                 
-        # Valida MIN_NOTIONAL
         min_notional_filter = next((f for f in symbol_info['filters'] if f['filterType'] == 'MIN_NOTIONAL'), None)
         if min_notional_filter:
             price = float(self.client_binance.get_symbol_ticker(symbol=self.operation_code)['price'])
@@ -490,30 +375,23 @@ class BinanceTraderBot:
                 raise ValueError(f"Valor total da ordem (quantidade * preço) deve ser maior que {min_notional}")
 
     def _handle_trade_error(self, trade_type: str, error: Exception) -> None:
-        """Trata erros durante execução de trades"""
         trade_logger.log_error(f"Erro ao executar ordem de {trade_type}", error)
         self._send_error_alert(trade_type, str(error))
 
     def _send_trade_alert(self, trade_type: str, order: Dict[str, Any]) -> None:
-        """Envia alerta sobre trade executado"""
         message = f"{trade_type} executada: {order['orderId']} - {order['origQty']} {self.stock_code}"
         trade_logger.log_info(message)
         print(message)
-        # Aqui poderia ser integrado com serviço de notificações (email, SMS, etc)
 
     def _send_error_alert(self, trade_type: str, error_message: str) -> None:
-        """Envia alerta sobre erro em trade"""
         message = f"ERRO em {trade_type}: {error_message}"
         trade_logger.log_error(message)
         print(message)
-        # Aqui poderia ser integrado com serviço de notificações (email, SMS, etc)
-    
+
     def createLogOrder(self, order):
-        """Cria log da ordem executada"""
         try:
             timestamp = order.get('transactTime', int(time.time() * 1000))
             datetime_transact = datetime.fromtimestamp(timestamp / 1000).strftime('%Y-%m-%d %H:%M:%S')
-            
             log_message = (
                 f"\nORDEM EXECUTADA:\n"
                 f"ID: {order['orderId']}\n"
@@ -524,49 +402,33 @@ class BinanceTraderBot:
                 f"Status: {order['status']}\n"
                 f"Time: {datetime_transact}\n"
             )
-            
             trade_logger.log_info(log_message)
             print(log_message)
-            
         except Exception as e:
             trade_logger.log_error("Erro ao criar log da ordem", e)
 
-
     def start(self):
-        """Inicia a execução contínua do bot"""
         if not self._running:
             self._running = True
             trade_logger.log_info("Bot iniciado")
             self._run_loop()
 
     def stop(self):
-        """Para a execução do bot de forma segura"""
         if self._running:
             self._running = False
             trade_logger.log_info("Bot parado")
-            # Fecha qualquer posição aberta
             if self.actual_trade_position:
                 self.sellStock()
             self.updateAllData()
 
     def _run_loop(self):
-        """Loop principal de execução do bot"""
         while self._running:
             try:
-                # Atualiza dados do mercado
                 self.updateAllData()
-                
-                # Calcula indicadores
                 df_with_indicators = calculate_indicators(self.candle_data)
                 df_with_indicators['signal'] = strategy_signals(df_with_indicators)
-                
-                # Atualiza status no monitor
                 self.monitor.update_status(self, df_with_indicators)
-                
-                # Último sinal gerado
                 trade_decision = df_with_indicators['signal'].iloc[-1] == 1
-                
-                # Executa operações de trading
                 if not self.actual_trade_position and trade_decision:
                     order = self.buyStock()
                     if order:
@@ -585,35 +447,21 @@ class BinanceTraderBot:
                             'price': float(order['fills'][0]['price']),
                             'timestamp': datetime.fromtimestamp(order['transactTime']/1000).strftime('%Y-%m-%d %H:%M:%S')
                         }
-                
                 time.sleep(2)
                 self.updateAllData()
-                
             except Exception as e:
                 trade_logger.log_error("Erro durante execução", e)
-                time.sleep(10)  # Reduzido para 10 segundos antes de tentar novamente
+                time.sleep(10)
 
     def execute(self):
-        """Executa um único ciclo de trading"""
         try:
-            # Atualiza dados do mercado
             self.updateAllData()
-            
-            # Calcula indicadores
             df_with_indicators = calculate_indicators(self.candle_data)
             df_with_indicators['signal'] = strategy_signals(df_with_indicators)
-            
-            # Atualiza status no monitor
             self.monitor.update_status(self, df_with_indicators)
-            
-            # Se o bot não estiver rodando, apenas atualiza o status
             if not self._running:
                 return
-                
-            # Último sinal gerado
             trade_decision = df_with_indicators['signal'].iloc[-1] == 1
-            
-            # Executa operações de trading
             if not self.actual_trade_position and trade_decision:
                 order = self.buyStock()
                 if order:
@@ -632,52 +480,36 @@ class BinanceTraderBot:
                         'price': float(order['fills'][0]['price']),
                         'timestamp': datetime.fromtimestamp(order['transactTime']/1000).strftime('%Y-%m-%d %H:%M:%S')
                     }
-            
             time.sleep(2)
-            
         except Exception as e:
             trade_logger.log_error("Erro durante execução", e)
-            time.sleep(10)  # Reduzido para 10 segundos antes de tentar novamente
+            time.sleep(10)
 
 def main():
     try:
         # Carrega configurações do ambiente
         config = TradingConfig.from_env()
-        
-        # Inicializa o cliente Binance para verificar conexão
         client = Client(config.api_key, config.secret_key)
-        
-        # Obtém o preço atual do ativo
         ticker = client.get_symbol_ticker(symbol=config.trading_pair)
         current_price = float(ticker['price'])
-        
-        # Obtém o saldo da moeda base
         account = client.get_account()
         base_balance = 0.0
         for balance in account['balances']:
             if balance['asset'] == config.quote_asset:
                 base_balance = float(balance['free'])
                 break
-        
         trade_logger.log_info(f"Saldo {config.quote_asset}: {base_balance}, Preço {config.trading_pair}: {current_price}")
-        
-        # Inicializa o bot
         trader = BinanceTraderBot(config)
-        
-        # Inicia o bot
         trader.start()
-        
         try:
             while True:
-                time.sleep(1)  # Mantém o programa rodando
+                time.sleep(60)
         except KeyboardInterrupt:
-            trader.stop()  # Para o bot de forma segura
-            
+            trader.stop()
     except KeyboardInterrupt:
         trade_logger.log_info("Programa encerrado pelo usuário")
     except Exception as e:
         trade_logger.log_error("Erro fatal", e)
         
-
 if __name__ == "__main__":
     main()
