@@ -287,8 +287,8 @@ def main():
                     balance_delta = bot.last_stock_account_balance - bot.initial_balance
                     st.metric(
                         "Saldo",
-                        f"{bot.last_stock_account_balance:.8f} {bot.stock_code}",
-                        delta=f"{balance_delta:+.8f}",
+                        f"{float(bot.last_stock_account_balance):.8f} {bot.stock_code}",
+                        delta=f"{float(balance_delta):+8.8f}",
                         delta_color="normal" if balance_delta >= 0 else "inverse",
                         help="Saldo atual e variação desde o início"
                     )
@@ -299,37 +299,37 @@ def main():
                     price_change = df['close'].pct_change().iloc[-1] * 100
                     st.metric(
                         "Preço Atual",
-                        f"{current_price:.2f} {bot.config.quote_asset}",
-                        delta=f"{price_change:+.2f}%",
+                        f"{float(current_price):.2f} {bot.config.quote_asset}",
+                        delta=f"{float(price_change):+2.2f}%",
                         delta_color="normal" if price_change >= 0 else "inverse",
                         help="Preço atual e variação percentual"
                     )
                     st.metric(
                         "Volume 24h",
-                        f"{df['volume'].iloc[-1]:.2f}",
+                        f"{float(df['volume'].iloc[-1]):.2f}",
                         help="Volume de negociação nas últimas 24 horas"
                     )
                     roi_value = df['roi'].iloc[-1] * 100
                     st.metric(
                         "ROI",
-                        f"{roi_value:.2f}%",
-                        delta=f"{roi_value:+.2f}%",
+                        f"{float(roi_value):.2f}%",
+                        delta=f"{float(roi_value):+2.2f}%",
                         delta_color="normal" if roi_value >= 0 else "inverse",
                         help="Retorno sobre o investimento acumulado"
                     )
                 with col_ema:
-                    st.metric("EMA 7", f"{df['ema_7'].iloc[-1]:.2f}")
-                    st.metric("EMA 25", f"{df['ema_25'].iloc[-1]:.2f}")
-                    st.metric("EMA 50", f"{df['ema_50'].iloc[-1]:.2f}")
-                    st.metric("EMA 100", f"{df['ema_100'].iloc[-1]:.2f}")
+                    st.metric("EMA 7", f"{float(df['ema_7'].iloc[-1]):.2f}")
+                    st.metric("EMA 25", f"{float(df['ema_25'].iloc[-1]):.2f}")
+                    st.metric("EMA 50", f"{float(df['ema_50'].iloc[-1]):.2f}")
+                    st.metric("EMA 100", f"{float(df['ema_100'].iloc[-1]):.2f}")
                 with col_macd:
-                    st.metric("MACD", f"{df['macd_line'].iloc[-1]:.2f}")
-                    st.metric("Sinal MACD", f"{df['signal_line'].iloc[-1]:.2f}")
-                    st.metric("RSI", f"{df['rsi'].iloc[-1]:.2f}")
+                    st.metric("MACD", f"{float(df['macd_line'].iloc[-1]):.2f}")
+                    st.metric("Sinal MACD", f"{float(df['signal_line'].iloc[-1]):.2f}")
+                    st.metric("RSI", f"{float(df['rsi'].iloc[-1]):.2f}")
                     max_drawdown = ((df['close'].max() - df['close'].min()) / df['close'].max()) * 100
                     st.metric(
                         "Drawdown Máx.",
-                        f"{max_drawdown:.2f}%",
+                        f"{float(max_drawdown):.2f}%",
                         help="Maior queda percentual do preço"
                     )
                 if hasattr(bot, 'last_trade') and bot.last_trade:
@@ -338,9 +338,9 @@ def main():
                     with trade_cols[0]:
                         st.metric("Tipo", bot.last_trade['side'])
                     with trade_cols[1]:
-                        st.metric("Quantidade", f"{bot.last_trade['quantity']:.8f}")
+                        st.metric("Quantidade", f"{float(bot.last_trade['quantity']):.8f}")
                     with trade_cols[2]:
-                        st.metric("Preço", f"{bot.last_trade['price']:.2f}")
+                        st.metric("Preço", f"{float(bot.last_trade['price']):.2f}")
                     with trade_cols[3]:
                         st.metric("Horário", bot.last_trade['timestamp'])
             st.sidebar.title("📜 Monitor em Tempo Real")

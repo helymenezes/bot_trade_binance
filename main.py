@@ -1,5 +1,5 @@
-#atualização do arquivo main.py 1.1.3
 import os
+import re
 import time
 from datetime import datetime
 import pandas as pd
@@ -45,7 +45,6 @@ class TradingConfig:
             candle_interval=os.getenv('CANDLE_INTERVAL', '1h')
         )
 
-
 class BinanceTraderBot:
     """Classe principal do bot de trading para a Binance."""
     
@@ -57,14 +56,14 @@ class BinanceTraderBot:
         self.candle_period = config.candle_interval
         self.stop_loss = config.stop_loss
         self.take_profit = config.take_profit
-        self.traded_quantity = 0.0
+        self.traded_quantity = Decimal("0")
         
         self.actual_trade_position = False
         self._running = False
-        self.initial_balance = 0.0
+        self.initial_balance = Decimal("0")
         
         self.account_data = None
-        self.last_stock_account_balance = 0.0
+        self.last_stock_account_balance = Decimal("0")
         self.candle_data = None
         self.last_trade = None
         self.monitor = BotMonitor(trade_logger)
@@ -112,32 +111,24 @@ class BinanceTraderBot:
         
         for attempt in range(max_retries):
             try:
-                try:
-                    self.client_binance.ping()
-                except Exception as e:
-                    trade_logger.log_error("Erro ao fazer ping na API", e)
-                    raise
+                self.client_binance.ping()
                 
-                try:
-                    self.account_data = self.getUpdatedAccountData()
-                    self.last_stock_account_balance = self.getLastStockAccountBalance()
-                    self.actual_trade_position = self.getActualTradePosition()
-                    self.candle_data = self.getStockData_ClosePrice_OpenTime()
-                    
-                    # Atualiza a quantidade a ser negociada se não estiver em posição
-                    if not self.actual_trade_position:
-                        usdt_balance = 0.0
-                        for balance in self.account_data["balances"]:
-                            if balance["asset"] == self.config.quote_asset:
-                                usdt_balance = float(balance["free"])
-                                break
-                        btc_price = float(self.client_binance.get_symbol_ticker(symbol=self.operation_code)['price'])
-                        self.traded_quantity = round((usdt_balance * (self.traded_percentage / 100)) / btc_price, 5)
-                except Exception as e:
-                    trade_logger.log_error("Erro ao atualizar dados da conta", e)
-                    raise
+                self.account_data = self.getUpdatedAccountData()
+                self.last_stock_account_balance = self.getLastStockAccountBalance()
+                self.actual_trade_position = self.getActualTradePosition()
+                self.candle_data = self.getStockData_ClosePrice_OpenTime()
                 
-                if self.initial_balance == 0.0 and self.last_stock_account_balance > 0:
+                # Atualiza a quantidade a ser negociada se não estiver em posição
+                if not self.actual_trade_position:
+                    usdt_balance = Decimal("0")
+                    for balance in self.account_data["balances"]:
+                        if balance["asset"] == self.config.quote_asset:
+                            usdt_balance = Decimal(balance["free"])
+                            break
+                    btc_price = Decimal(self.client_binance.get_symbol_ticker(symbol=self.operation_code)['price'])
+                    self.traded_quantity = (usdt_balance * (Decimal(self.traded_percentage) / Decimal("100"))) / btc_price
+                
+                if self.initial_balance == Decimal("0") and self.last_stock_account_balance > Decimal("0"):
                     self.initial_balance = self.last_stock_account_balance
                     trade_logger.log_info(f"Saldo inicial definido: {self.initial_balance}")
                 
@@ -145,7 +136,7 @@ class BinanceTraderBot:
                 if self.actual_trade_position and len(self.candle_data) > 0:
                     current_price = self.candle_data['close'].iloc[-1]
                     entry_price = self.candle_data['close'].iloc[-2]
-                    price_change = ((current_price - entry_price) / entry_price) * 100
+                    price_change = ((float(current_price) - float(entry_price)) / float(entry_price)) * 100
                     if price_change <= -self.stop_loss:
                         trade_logger.log_info(f"Stop loss atingido: {price_change:.2f}%")
                         self.sellStock()
@@ -174,11 +165,11 @@ class BinanceTraderBot:
         if self.account_data and "balances" in self.account_data:
             for stock in self.account_data["balances"]:
                 if stock["asset"] == self.stock_code:
-                    return float(stock["free"])
-        return 0.0
+                    return Decimal(stock["free"])
+        return Decimal("0")
 
     def getActualTradePosition(self):
-        return self.last_stock_account_balance > 0.001
+        return self.last_stock_account_balance > Decimal("0.001")
 
     def getStockData_ClosePrice_OpenTime(self):
         try:
@@ -212,7 +203,7 @@ class BinanceTraderBot:
                     symbol=self.operation_code,
                     side=SIDE_BUY,
                     type=ORDER_TYPE_MARKET,
-                    quantity=quantity
+                    quantity=quantity  # A quantidade já está formatada (string)
                 )
                 self.actual_trade_position = True
                 self.createLogOrder(order)
@@ -236,7 +227,7 @@ class BinanceTraderBot:
                     symbol=self.operation_code,
                     side=SIDE_SELL,
                     type=ORDER_TYPE_MARKET,
-                    quantity=quantity
+                    quantity=quantity  # A quantidade já está formatada (string)
                 )
                 self.actual_trade_position = False
                 self.createLogOrder(order)
@@ -250,12 +241,12 @@ class BinanceTraderBot:
                 return None
         return None
 
-    def _execute_market_order(self, side: str, quantity: float) -> Dict[str, Any]:
+    def _execute_market_order(self, side: str, quantity: Union[str, Decimal]) -> Dict[str, Any]:
         order = self.client_binance.create_order(
             symbol=self.operation_code,
             side=side,
             type=ORDER_TYPE_MARKET,
-            quantity=quantity
+            quantity=str(quantity)
         )
         self.createLogOrder(order)
         trade_logger.log_info(f"Ordem de {side} executada: {order['orderId']}")
@@ -278,13 +269,13 @@ class BinanceTraderBot:
         corretamente de acordo com as regras do par (LOT_SIZE).
         """
         # Busca saldo da moeda de cotação
-        usdt_balance = 0.0
+        usdt_balance = Decimal("0")
         for balance in self.account_data["balances"]:
             if balance["asset"] == self.config.quote_asset:
-                usdt_balance = float(balance["free"])
+                usdt_balance = Decimal(balance["free"])
                 break
-        btc_price = float(self.client_binance.get_symbol_ticker(symbol=self.operation_code)['price'])
-        raw_quantity = (usdt_balance * (self.traded_percentage / 100)) / btc_price
+        btc_price = Decimal(self.client_binance.get_symbol_ticker(symbol=self.operation_code)['price'])
+        raw_quantity = (usdt_balance * (Decimal(self.traded_percentage) / Decimal("100"))) / btc_price
 
         symbol_info = self.get_symbol_info()
         if not symbol_info:
@@ -293,20 +284,16 @@ class BinanceTraderBot:
         if not lot_size_filter:
             raise ValueError("Filtro LOT_SIZE não encontrado")
         
-        # Converte step_size e min_qty para Decimal
+        # Converte o step_size e minQty para Decimal e normaliza o step_size
         step_size = Decimal(lot_size_filter['stepSize'])
         min_qty = Decimal(lot_size_filter['minQty'])
-        # Converte raw_quantity para Decimal
-        raw_quantity_dec = Decimal(str(raw_quantity))
-        # Determina o número de casas decimais a partir do step_size
-        decimal_places = abs(step_size.as_tuple().exponent)
-        # Arredonda para baixo usando ROUND_DOWN
-        quantity_dec = raw_quantity_dec.quantize(Decimal('1e-{}'.format(decimal_places)), rounding=ROUND_DOWN)
+        normalized_step_size = step_size.normalize()  # Remove zeros à direita
+        # Quantiza utilizando o mesmo expoente do step_size normalizado
+        quantity_dec = raw_quantity.quantize(normalized_step_size, rounding=ROUND_DOWN)
         quantity_dec = max(min_qty, quantity_dec)
-        # Formata a quantidade com a quantidade correta de casas decimais
-        formatted_quantity = format(quantity_dec, f'.{decimal_places}f').rstrip('0').rstrip('.') if '.' in format(quantity_dec, f'.{decimal_places}f') else format(quantity_dec, f'.{decimal_places}f')
+        decimal_places = abs(normalized_step_size.as_tuple().exponent)
+        formatted_quantity = format(quantity_dec, f'.{decimal_places}f')
         
-        import re
         if not re.match(r'^([0-9]{1,20})(\.[0-9]{1,20})?$', formatted_quantity):
             raise ValueError(f"Quantidade formatada inválida: {formatted_quantity}")
         
@@ -317,8 +304,7 @@ class BinanceTraderBot:
         Calcula a quantidade a ser vendida utilizando o módulo Decimal para arredondar
         corretamente de acordo com as regras do par (LOT_SIZE).
         """
-        raw_quantity = self.last_stock_account_balance
-
+        raw_quantity = self.last_stock_account_balance  # Já é Decimal
         symbol_info = self.get_symbol_info()
         if not symbol_info:
             raise ValueError(f"Não foi possível obter informações do par {self.operation_code}")
@@ -328,22 +314,21 @@ class BinanceTraderBot:
         
         step_size = Decimal(lot_size_filter['stepSize'])
         min_qty = Decimal(lot_size_filter['minQty'])
-        raw_quantity_dec = Decimal(str(raw_quantity))
-        decimal_places = abs(step_size.as_tuple().exponent)
-        quantity_dec = raw_quantity_dec.quantize(Decimal('1e-{}'.format(decimal_places)), rounding=ROUND_DOWN)
+        normalized_step_size = step_size.normalize()
+        quantity_dec = raw_quantity.quantize(normalized_step_size, rounding=ROUND_DOWN)
         quantity_dec = max(min_qty, quantity_dec)
-        formatted_quantity = format(quantity_dec, f'.{decimal_places}f').rstrip('0').rstrip('.') if '.' in format(quantity_dec, f'.{decimal_places}f') else format(quantity_dec, f'.{decimal_places}f')
+        decimal_places = abs(normalized_step_size.as_tuple().exponent)
+        formatted_quantity = format(quantity_dec, f'.{decimal_places}f')
         
-        import re
         if not re.match(r'^([0-9]{1,20})(\.[0-9]{1,20})?$', formatted_quantity):
             raise ValueError(f"Quantidade formatada inválida: {formatted_quantity}")
         
         return formatted_quantity
 
-    def _validate_trade_quantity(self, quantity: Union[str, float]) -> None:
+    def _validate_trade_quantity(self, quantity: Union[str, Decimal]) -> None:
         """Valida a quantidade a ser negociada considerando as regras do par"""
-        qty = float(quantity) if isinstance(quantity, str) else quantity
-        if qty <= 0:
+        qty = Decimal(quantity) if isinstance(quantity, str) else quantity
+        if qty <= Decimal("0"):
             raise ValueError("Quantidade de trade inválida")
             
         symbol_info = self.get_symbol_info()
@@ -352,24 +337,25 @@ class BinanceTraderBot:
             
         lot_size_filter = next((f for f in symbol_info['filters'] if f['filterType'] == 'LOT_SIZE'), None)
         if lot_size_filter:
-            min_qty = float(lot_size_filter['minQty'])
-            max_qty = float(lot_size_filter['maxQty'])
-            step_size = float(lot_size_filter['stepSize'])
+            min_qty = Decimal(lot_size_filter['minQty'])
+            max_qty = Decimal(lot_size_filter['maxQty'])
+            step_size = Decimal(lot_size_filter['stepSize'])
+            normalized_step_size = step_size.normalize()
             
             if qty < min_qty:
                 raise ValueError(f"Quantidade menor que o mínimo permitido ({min_qty})")
             if qty > max_qty:
                 raise ValueError(f"Quantidade maior que o máximo permitido ({max_qty})")
             
-            remainder = qty % step_size
-            if abs(remainder) > 1e-10:
+            remainder = (qty % normalized_step_size).normalize()
+            if remainder != Decimal("0"):
                 raise ValueError(f"Quantidade deve ser múltipla de {step_size}")
                 
         min_notional_filter = next((f for f in symbol_info['filters'] if f['filterType'] == 'MIN_NOTIONAL'), None)
         if min_notional_filter:
-            price = float(self.client_binance.get_symbol_ticker(symbol=self.operation_code)['price'])
+            price = Decimal(self.client_binance.get_symbol_ticker(symbol=self.operation_code)['price'])
             notional = qty * price
-            min_notional = float(min_notional_filter['minNotional'])
+            min_notional = Decimal(min_notional_filter['minNotional'])
             
             if notional < min_notional:
                 raise ValueError(f"Valor total da ordem (quantidade * preço) deve ser maior que {min_notional}")
@@ -434,18 +420,18 @@ class BinanceTraderBot:
                     if order:
                         self.last_trade = {
                             'side': 'COMPRA',
-                            'quantity': float(order['origQty']),
-                            'price': float(order['fills'][0]['price']),
-                            'timestamp': datetime.fromtimestamp(order['transactTime']/1000).strftime('%Y-%m-%d %H:%M:%S')
+                            'quantity': order['origQty'],
+                            'price': order['fills'][0]['price'],
+                            'timestamp': datetime.fromtimestamp(order['transactTime'] / 1000).strftime('%Y-%m-%d %H:%M:%S')
                         }
                 elif self.actual_trade_position and not trade_decision:
                     order = self.sellStock()
                     if order:
                         self.last_trade = {
                             'side': 'VENDA',
-                            'quantity': float(order['origQty']),
-                            'price': float(order['fills'][0]['price']),
-                            'timestamp': datetime.fromtimestamp(order['transactTime']/1000).strftime('%Y-%m-%d %H:%M:%S')
+                            'quantity': order['origQty'],
+                            'price': order['fills'][0]['price'],
+                            'timestamp': datetime.fromtimestamp(order['transactTime'] / 1000).strftime('%Y-%m-%d %H:%M:%S')
                         }
                 time.sleep(2)
                 self.updateAllData()
@@ -467,18 +453,18 @@ class BinanceTraderBot:
                 if order:
                     self.last_trade = {
                         'side': 'COMPRA',
-                        'quantity': float(order['origQty']),
-                        'price': float(order['fills'][0]['price']),
-                        'timestamp': datetime.fromtimestamp(order['transactTime']/1000).strftime('%Y-%m-%d %H:%M:%S')
+                        'quantity': order['origQty'],
+                        'price': order['fills'][0]['price'],
+                        'timestamp': datetime.fromtimestamp(order['transactTime'] / 1000).strftime('%Y-%m-%d %H:%M:%S')
                     }
             elif self.actual_trade_position and not trade_decision:
                 order = self.sellStock()
                 if order:
                     self.last_trade = {
                         'side': 'VENDA',
-                        'quantity': float(order['origQty']),
-                        'price': float(order['fills'][0]['price']),
-                        'timestamp': datetime.fromtimestamp(order['transactTime']/1000).strftime('%Y-%m-%d %H:%M:%S')
+                        'quantity': order['origQty'],
+                        'price': order['fills'][0]['price'],
+                        'timestamp': datetime.fromtimestamp(order['transactTime'] / 1000).strftime('%Y-%m-%d %H:%M:%S')
                     }
             time.sleep(2)
         except Exception as e:
@@ -491,12 +477,12 @@ def main():
         config = TradingConfig.from_env()
         client = Client(config.api_key, config.secret_key)
         ticker = client.get_symbol_ticker(symbol=config.trading_pair)
-        current_price = float(ticker['price'])
+        current_price = ticker['price']
         account = client.get_account()
-        base_balance = 0.0
+        base_balance = "0"
         for balance in account['balances']:
             if balance['asset'] == config.quote_asset:
-                base_balance = float(balance['free'])
+                base_balance = balance['free']
                 break
         trade_logger.log_info(f"Saldo {config.quote_asset}: {base_balance}, Preço {config.trading_pair}: {current_price}")
         trader = BinanceTraderBot(config)
